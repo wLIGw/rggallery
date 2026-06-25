@@ -1,0 +1,169 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  perspective: 600px;
+  perspective-origin: 50% 50%;
+  overflow: hidden;
+}
+
+.photo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform, opacity;
+  background: #f2f1ec;
+  padding: 14px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.55);
+  border-radius: 1px;
+  backface-visibility: hidden;
+  box-sizing: border-box;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===================== ПАНЕЛЬ НАСТРОЕК ===================== */
+
+#settings-panel {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  width: 300px;
+  background: rgba(20, 20, 22, 0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  z-index: 9999;
+  color: #eee;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  user-select: none;
+  backdrop-filter: blur(6px);
+}
+
+#settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: grab;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+#settings-header:active {
+  cursor: grabbing;
+}
+
+#settings-toggle {
+  background: rgba(255,255,255,0.08);
+  border: none;
+  color: #eee;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+}
+
+#settings-toggle:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#settings-body {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+}
+
+#settings-panel.collapsed #settings-body {
+  display: none;
+}
+
+.setting-row {
+  margin-bottom: 12px;
+}
+
+.setting-row label {
+  display: block;
+  margin-bottom: 4px;
+  color: #bbb;
+  font-size: 11.5px;
+}
+
+.setting-row {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.setting-row input[type="range"] {
+  width: 100%;
+  accent-color: #e8e6df;
+  height: 4px;
+}
+
+.setting-row .val {
+  display: inline-block;
+  margin-top: 2px;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+#settings-body::-webkit-scrollbar {
+  width: 6px;
+}
+#settings-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+/* Стили для кнопок переключения анимаций */
+.page-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.switch-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #aaa;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.switch-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.switch-btn.active {
+  background: #e8e6df;
+  border-color: #e8e6df;
+  color: #141416;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(232, 230, 223, 0.2);
+}

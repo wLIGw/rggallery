@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Photo Flow — Анимация 2</title>
+<link rel="stylesheet" href="../style/styleno2.css">
+</head>
+<body>
+
+<div id="scene"></div>
+
+<div id="settings-panel">
+  <div id="settings-header">
+    <span>Настройки интерактивной ленты</span>
+    <button id="settings-toggle">—</button>
+  </div>
+  <div id="settings-body">
+
+    <div class="setting-row">
+      <label>Выберите режим анимации</label>
+      <div class="page-switcher">
+        <button class="switch-btn" onclick="location.href='../index.html'">Анимация 1</button>
+        <button class="switch-btn active" onclick="location.href='style2.html'">Анимация 2</button>
+      </div>
+    </div>
+    
+    <div class="setting-divider"></div>
+
+    <div class="setting-row">
+      <label>Ориентация движения</label>
+      <select id="s-orientation">
+        <option value="horizontal">Горизонтальная</option>
+        <option value="vertical">Вертикальная</option>
+      </select>
+    </div>
+
+    <div class="setting-row">
+      <label>Поворот всей сетки карточек</label>
+      <select id="s-tilt">
+        <option value="0">Прямые lines (0°)</option>
+        <option value="45">Наклон влево (45°)</option>
+        <option value="-45">Наклон вправо (-45°)</option>
+      </select>
+    </div>
+
+    <div class="setting-row">
+      <label>Количество рядов (линий)</label>
+      <input type="range" id="s-lines" min="1" max="25" step="1">
+      <span class="val" id="v-lines"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Размер стороны фото (px)</label>
+      <input type="range" id="s-size" min="60" max="400" step="5">
+      <span class="val" id="v-size"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Соотношение сторон (H/W)</label>
+      <input type="range" id="s-ratio" min="0.5" max="2.0" step="0.05">
+      <span class="val" id="v-ratio"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Отступ между линиями (px)</label>
+      <input type="range" id="s-gap-lines" min="0" max="100" step="1">
+      <span class="val" id="v-gap-lines"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Отступ между фото (px)</label>
+      <input type="range" id="s-gap-photos" min="0" max="100" step="1">
+      <span class="val" id="v-gap-photos"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Общая скорость анимации (px/с)</label>
+      <input type="range" id="s-speed" min="10" max="400" step="5">
+      <span class="val" id="v-speed"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Макс. наклон карточек (°)</label>
+      <input type="range" id="s-rotation" min="0" max="30" step="1">
+      <span class="val" id="v-rotation"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Толщина белой рамки (px)</label>
+      <input type="range" id="s-border" min="0" max="20" step="1">
+      <span class="val" id="v-border"></span>
+    </div>
+
+    <div class="setting-divider"></div>
+    
+    <div class="setting-row">
+      <label>Направление движения линий:</label>
+      <div id="direction-lines-container"></div>
+    </div>
+
+    <div class="setting-divider"></div>
+
+    <div class="setting-row">
+      <label>
+        <input type="checkbox" id="s-logo">
+        Показать центральный логотип
+      </label>
+    </div>
+
+    <div id="logo-options" style="display:none">
+      <div class="setting-row">
+        <label>Размер логотипа (px)</label>
+        <input type="range" id="s-logosize" min="50" max="500" step="10">
+        <span class="val" id="v-logosize"></span>
+      </div>
+
+      <div class="setting-row">
+        <label>
+          <input type="checkbox" id="s-logomask">
+          Скрывать фото под логотипом
+        </label>
+      </div>
+
+      <div id="mask-options" style="display:none">
+        <div class="setting-row">
+          <label>Отступ зоны скрытия (px)</label>
+          <input type="range" id="s-logomaskradius" min="0" max="250" step="5">
+          <span class="val" id="v-logomaskradius"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../scripts/scriptno2.js"></script>
+</body>
+</html>

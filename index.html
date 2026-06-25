@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Photo Flow — Анимация 1</title>
+<link rel="stylesheet" href="style/style.css">
+</head>
+<body>
+
+<div id="scene"></div>
+
+<div id="settings-panel">
+  <div id="settings-header">
+    <span>Настройки</span>
+    <button id="settings-toggle">—</button>
+  </div>
+  <div id="settings-body">
+
+    <div class="setting-row">
+      <label>Выберите режим анимации</label>
+      <div class="page-switcher">
+        <button class="switch-btn active" onclick="location.href='index.html'">Анимация 1</button>
+        <button class="switch-btn" onclick="location.href='pages/style2.html'">Анимация 2</button>
+      </div>
+    </div>
+    
+    <div class="setting-divider"></div>
+
+    <div class="setting-row">
+      <label>Мин. ширина фото (px)</label>
+      <input type="range" id="s-minw" min="60" max="500" step="5">
+      <span class="val" id="v-minw"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Макс. ширина фото (px)</label>
+      <input type="range" id="s-maxw" min="60" max="700" step="5">
+      <span class="val" id="v-maxw"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Соотношение сторон (H/W)</label>
+      <input type="range" id="s-ratio" min="0.4" max="1.6" step="0.01">
+      <span class="val" id="v-ratio"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Мин. время полёта (сек)</label>
+      <input type="range" id="s-mindur" min="1" max="15" step="0.1">
+      <span class="val" id="v-mindur"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Макс. время полёта (сек)</label>
+      <input type="range" id="s-maxdur" min="1" max="20" step="0.1">
+      <span class="val" id="v-maxdur"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Макс. приближение (масштаб)</label>
+      <input type="range" id="s-maxscale" min="1" max="6" step="0.05">
+      <span class="val" id="v-maxscale"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Интервал между фото (мс)</label>
+      <input type="range" id="s-interval" min="50" max="3000" step="50">
+      <span class="val" id="v-interval"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Режим появления</label>
+      <select id="s-spawnmode">
+        <option value="random">Случайно (свободно)</option>
+        <option value="grid">Равномерно по всему экрану</option>
+      </select>
+    </div>
+
+    <div class="setting-row">
+      <label>Допустимое перекрытие фото</label>
+      <input type="range" id="s-overlap" min="0" max="1" step="0.01">
+      <span class="val" id="v-overlap"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Мин. дистанция появления</label>
+      <input type="range" id="s-spawndist" min="0" max="1" step="0.01">
+      <span class="val" id="v-spawndist"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Разброс появления (×ширины экрана)</label>
+      <input type="range" id="s-spread" min="0.5" max="2.5" step="0.05">
+      <span class="val" id="v-spread"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Мин. угол наклона (°)</label>
+      <input type="range" id="s-minrotation" min="0" max="45" step="1">
+      <span class="val" id="v-minrotation"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Макс. угол наклона (°)</label>
+      <input type="range" id="s-maxrotation" min="0" max="45" step="1">
+      <span class="val" id="v-maxrotation"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Появление (доля пути, fade-in)</label>
+      <input type="range" id="s-fadein" min="0.02" max="0.5" step="0.01">
+      <span class="val" id="v-fadein"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Затухание (доля пути, fade-out)</label>
+      <input type="range" id="s-fadeout" min="0.02" max="0.6" step="0.01">
+      <span class="val" id="v-fadeout"></span>
+    </div>
+
+    <div class="setting-row">
+      <label>Толщина рамки (px)</label>
+      <input type="range" id="s-border" min="0" max="40" step="1">
+      <span class="val" id="v-border"></span>
+    </div>
+
+    <div class="setting-divider"></div>
+
+    <div class="setting-row setting-row--checkbox">
+      <label class="checkbox-label">
+        <input type="checkbox" id="s-logo">
+        Показать логотип в центре
+      </label>
+    </div>
+
+    <div id="logo-options" style="display:none">
+      <div class="setting-row">
+        <label>Размер логотипа (px)</label>
+        <input type="range" id="s-logosize" min="50" max="600" step="10">
+        <span class="val" id="v-logosize"></span>
+      </div>
+
+      <div class="setting-row">
+        <label>Отступ зоны без карточек (px)</label>
+        <input type="range" id="s-logopadding" min="0" max="300" step="5">
+        <span class="val" id="v-logopadding"></span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="scripts/script.js"></script>
+</body>
+</html>
