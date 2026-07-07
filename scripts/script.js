@@ -1,4 +1,21 @@
-const PHOTOS = ["img/1.jpeg","img/2.jpeg","img/3.jpeg","img/4.jpeg","img/5.jpeg","img/6.jpeg","img/7.jpeg","img/8.jpeg","img/9.jpeg","img/10.jpeg","img/11.jpeg","img/12.jpeg","img/13.jpg","img/14.jpg","img/15.jpg","img/16.jpg","img/17.jpg","img/18.jpg","img/19.jpg","img/20.jpg","img/21.jpg","img/22.jpg","img/23.jpg","img/24.jpg","img/25.jpg","img/26.jpg","img/27.jpg","img/28.jpg","img/29.jpg" ];
+const PHOTOS = [
+  "img/1.jpeg","img/2.jpeg","img/3.jpeg","img/4.jpeg","img/5.jpeg","img/6.jpeg","img/7.jpeg","img/8.jpeg","img/9.jpeg","img/10.jpeg","img/11.jpeg","img/12.jpeg",
+  "img/13.jpg","img/14.jpg","img/15.jpg","img/16.jpg","img/17.jpg","img/18.jpg","img/19.jpg","img/20.jpg","img/21.jpg","img/22.jpg","img/23.jpg","img/24.jpg",
+  "img/25.jpg","img/26.jpg","img/27.jpg","img/28.jpg","img/29.jpg"
+];
+
+/* ====================================================================
+   КОНТАКТНЫЕ ДАННЫЕ
+==================================================================== */
+const CONTACT_INFO = {
+  name:      'Ваше Имя',
+  title:     'Фотограф / Художник',
+  email:     'hello@example.com',
+  phone:     '+7 (999) 000-00-00',
+  instagram: '@yourinstagram',
+  website:   'www.yoursite.com',
+  extra:     ''
+};
 
 const scene = document.getElementById('scene');
 let W = window.innerWidth;
@@ -27,7 +44,6 @@ const CONFIG = {
   logoPadding: 60
 };
 
-// ── 1. Сразу грузим localStorage — до любой инициализации ──────────
 (function loadSavedConfig() {
   try {
     const saved = localStorage.getItem('photoflow_config');
@@ -70,19 +86,14 @@ updateLogoSize();
 function setLogoVisible(v) {
   logoEl.style.display = v ? 'block' : 'none';
 }
-
-// Применяем состояние лого сразу после создания элемента
 setLogoVisible(CONFIG.logoEnabled);
 
 function getLogoBlockZone() {
   if (!CONFIG.logoEnabled) return null;
   const logoW = CONFIG.logoSize;
-  // naturalHeight доступна только после загрузки — используем сохранённое соотношение
-  // или ждём load. Для надёжности берём квадрат: hw = hh = logoSize/2 + padding.
-  // Это чуть больше реального лого, зато гарантированно работает до onload.
   const logoH = (logoEl.naturalHeight && logoEl.naturalWidth)
     ? CONFIG.logoSize * (logoEl.naturalHeight / logoEl.naturalWidth)
-    : CONFIG.logoSize;          // ← консервативно: квадрат до загрузки
+    : CONFIG.logoSize;
   return {
     hw: logoW / 2 + CONFIG.logoPadding,
     hh: logoH / 2 + CONFIG.logoPadding
@@ -90,7 +101,7 @@ function getLogoBlockZone() {
 }
 
 /* ====================================================================
-   СПАВН
+   СПАВН С КОНТРОЛЕМ КОЛЛИЗИЙ
 ==================================================================== */
 let gridState = [];
 let photos    = [];
@@ -108,26 +119,37 @@ function isTooCloseToLogo(x, y) {
   return false;
 }
 
-function pickSpawnPointRandom() {
-  const recent = photos.filter(p => (performance.now() - p.start) < 900);
+function pickSpawnPointRandom(existingPoints = []) {
+  const now = performance.now();
+  const recent = photos.filter(p => (now - p.start) < 900);
   const overlapFactor = 1 - Math.min(0.95, CONFIG.overlap);
   const minDist = CONFIG.minSpawnDistance * Math.min(W, H) * overlapFactor;
 
-  for (let attempt = 0; attempt < 30; attempt++) {
+  for (let attempt = 0; attempt < 50; attempt++) {
     const x = (Math.random() - 0.5) * W * CONFIG.spread;
     const y = (Math.random() - 0.5) * H * CONFIG.spread;
-    const tooClose = recent.some(p => {
+    
+    let tooClose = recent.some(p => {
       const dx = p.x - x, dy = p.y - y;
       return Math.sqrt(dx*dx + dy*dy) < minDist;
     });
+    
+    if (!tooClose && existingPoints.length > 0) {
+      tooClose = existingPoints.some(pt => {
+        const dx = pt.x - x, dy = pt.y - y;
+        return Math.sqrt(dx*dx + dy*dy) < minDist;
+      });
+    }
+
     if (!tooClose && !isTooCloseToLogo(x, y)) return { x, y };
   }
-  for (let attempt = 0; attempt < 20; attempt++) {
+  
+  for (let attempt = 0; attempt < 30; attempt++) {
     const x = (Math.random() - 0.5) * W * CONFIG.spread;
     const y = (Math.random() - 0.5) * H * CONFIG.spread;
     if (!isTooCloseToLogo(x, y)) return { x, y };
   }
-  return { x: (Math.random()-0.5)*W*CONFIG.spread, y: (Math.random()-0.5)*H*CONFIG.spread };
+  return { x: (Math.random() > 0.5 ? 1 : -1) * (W * 0.4), y: (Math.random() > 0.5 ? 1 : -1) * (H * 0.4) };
 }
 
 function pickSpawnPointGrid() {
@@ -158,23 +180,48 @@ function pickSpawnPointGrid() {
   return { x: cell.col*cellW + cellW/2 + jx - W/2, y: cell.row*cellH + cellH/2 + jy - H/2 };
 }
 
-function pickSpawnPoint() {
-  return CONFIG.spawnMode === 'grid' ? pickSpawnPointGrid() : pickSpawnPointRandom();
+function pickSpawnPoint(existingPoints = []) {
+  return CONFIG.spawnMode === 'grid' ? pickSpawnPointGrid() : pickSpawnPointRandom(existingPoints);
 }
 
 /* ====================================================================
-   Photo
+   Класс Photo
 ==================================================================== */
 class Photo {
-  constructor(initialAgeFraction) {
+  constructor(initialAgeFraction, predefinedPoint = null) {
     this.el = document.createElement('div');
     this.el.className = 'photo';
     this.el.style.padding = CONFIG.border + 'px';
     this.el.style.cursor = 'grab';
     this.el.style.touchAction = 'none';
 
+    const pt = predefinedPoint ? predefinedPoint : pickSpawnPoint();
+    this.x = pt.x;
+    this.y = pt.y;
+
+    let chosenSrc = PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+    
+    if (photos.length > 0) {
+      const proximityRadius = Math.min(W, H) * 0.35;
+      const nearbySrcs = photos
+        .filter(p => {
+          const dx = p.x - this.x;
+          const dy = p.y - this.y;
+          return Math.sqrt(dx * dx + dy * dy) < proximityRadius;
+        })
+        .map(p => p.el.querySelector('img').src);
+
+      if (nearbySrcs.length > 0) {
+        for (let attempt = 0; attempt < 15; attempt++) {
+          const isMatch = nearbySrcs.some(src => src.endsWith(chosenSrc));
+          if (!isMatch) break;
+          chosenSrc = PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+        }
+      }
+    }
+
     const img = document.createElement('img');
-    img.src = PHOTOS[Math.floor(Math.random() * PHOTOS.length)];
+    img.src = chosenSrc;
     img.draggable = false;
     this.el.appendChild(img);
 
@@ -183,10 +230,6 @@ class Photo {
     const width = lo + Math.random() * (hi - lo);
     this.el.style.width  = width + 'px';
     this.el.style.height = width * CONFIG.ratio + 'px';
-
-    const pt = pickSpawnPoint();
-    this.x = pt.x;
-    this.y = pt.y;
 
     const minR = Math.min(CONFIG.minRotation, CONFIG.maxRotation);
     const maxR = Math.max(CONFIG.minRotation, CONFIG.maxRotation);
@@ -197,20 +240,19 @@ class Photo {
     const dhi = Math.max(CONFIG.minDuration, CONFIG.maxDuration);
     this.duration = (dlo + Math.random()*(dhi-dlo)) * 1000;
 
-    // ── seed: равномерное распределение по шкале времени ──────────
-    // Каждое фото получает уникальный возраст пропорционально своему
-    // индексу, чтобы они были разбросаны по всей шкале 0..1 и не
-    // умирали одной волной. initialAgeFraction передаётся снаружи.
     const age = (initialAgeFraction || 0) * this.duration;
     this.start = performance.now() - age;
 
-    this.dead = false;
-    this.dragging = false;
-    this.lastScale = 0.05;
+    this.dead         = false;
+    this.dragging     = false;
+    this.inPopup      = false;
+    this.popupStartTime = 0;
+    this.lastScale    = 0.05;
+    this.lastOpacity  = 0;
     this.pointerOffsetX = 0;
     this.pointerOffsetY = 0;
-    this.dragScreenX = 0;
-    this.dragScreenY = 0;
+    this.dragScreenX  = 0;
+    this.dragScreenY  = 0;
     this.dragStartTime = 0;
 
     scene.appendChild(this.el);
@@ -218,8 +260,14 @@ class Photo {
   }
 
   _bindDrag() {
+    let startX = 0, startY = 0, moved = false;
+
     this.el.addEventListener('pointerdown', e => {
       e.preventDefault();
+      startX = e.clientX;
+      startY = e.clientY;
+      moved  = false;
+
       this.dragging = true;
       this.dragStartTime = performance.now();
       this.el.style.cursor = 'grabbing';
@@ -231,17 +279,26 @@ class Photo {
       this.dragScreenX = rect.left + rect.width/2;
       this.dragScreenY = rect.top  + rect.height/2;
     });
+
     this.el.addEventListener('pointermove', e => {
       if (!this.dragging) return;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > 8) moved = true;
       this.dragScreenX = e.clientX - this.pointerOffsetX;
       this.dragScreenY = e.clientY - this.pointerOffsetY;
       this.el.style.transform =
         `translate(-50%,-50%) translate(${this.dragScreenX}px,${this.dragScreenY}px) scale(${this.lastScale}) rotate(${this.rotation}deg)`;
     });
+
     const release = () => {
       if (!this.dragging) return;
       this.dragging = false;
       this.el.style.cursor = 'grab';
+
+      if (!moved) {
+        openPopup(this);
+        return;
+      }
+
       const now = performance.now();
       this.start += now - this.dragStartTime;
       const t = Math.max(0.001, Math.min(0.999, (now - this.start) / this.duration));
@@ -249,12 +306,14 @@ class Photo {
       this.x = (this.dragScreenX - W/2) / factor;
       this.y = (this.dragScreenY - H/2) / factor;
     };
+
     this.el.addEventListener('pointerup', release);
     this.el.addEventListener('pointercancel', release);
   }
 
   update(now) {
-    if (this.dragging) return;
+    if (this.dragging || this.inPopup) return;
+
     const t = (now - this.start) / this.duration;
     if (t >= 1) { this.dead = true; this.el.remove(); return; }
 
@@ -263,7 +322,8 @@ class Photo {
     let opacity = t < fi ? t/fi : t > 1-fo ? (1-t)/fo : 1;
     opacity = Math.max(0, Math.min(1, opacity));
 
-    this.lastScale = scale;
+    this.lastScale   = scale;
+    this.lastOpacity = opacity;
     const x = this.x * (0.3 + t*1.3);
     const y = this.y * (0.3 + t*1.3);
     this.el.style.transform =
@@ -274,25 +334,26 @@ class Photo {
 }
 
 /* ====================================================================
-   Seed + spawn loop + animate
+   Запуск анимации
 ==================================================================== */
-
-// ── 2. seed запускается только после загрузки лого ─────────────────
-// Это гарантирует что naturalWidth/naturalHeight известны и зона лого
-// считается точно. Также исключает наслоение фото в центре при старте.
 function startEverything() {
+  scene.innerHTML = '';
+  photos = [];
+
   const avgDuration = (CONFIG.minDuration + CONFIG.maxDuration) / 2 * 1000;
   const N = Math.ceil(avgDuration / CONFIG.spawnInterval);
-  // ── равномерное распределение: i/N даёт уникальный возраст каждому фото
-  for (let i = 0; i < N; i++) photos.push(new Photo(i / N));
+  
+  const generatedPoints = [];
+  for (let i = 0; i < N; i++) {
+    const pt = pickSpawnPoint(generatedPoints);
+    generatedPoints.push(pt);
+    photos.push(new Photo(i / N, pt));
+  }
 
-  // spawn loop
-  (function spawnNext() {
+  setInterval(() => {
     try { photos.push(new Photo(0)); } catch(e) { console.error(e); }
-    setTimeout(spawnNext, CONFIG.spawnInterval);
-  })();
+  }, CONFIG.spawnInterval);
 
-  // animate loop
   (function animate() {
     const now = performance.now();
     for (let i = photos.length - 1; i >= 0; i--) {
@@ -306,12 +367,206 @@ function startEverything() {
   })();
 }
 
-// Ждём загрузки лого если оно включено, иначе стартуем сразу
 if (CONFIG.logoEnabled && !logoEl.complete) {
-  logoEl.addEventListener('load', startEverything, { once: true });
-  logoEl.addEventListener('error', startEverything, { once: true }); // на случай ошибки загрузки
+  logoEl.addEventListener('load',  startEverything, { once: true });
+  logoEl.addEventListener('error', startEverything, { once: true });
 } else {
-  startEverything();
+  setTimeout(startEverything, 40);
+}
+
+/* ====================================================================
+   ПОПАП (МГНОВЕННОЕ УВЕЛИЧЕНИЕ И ИДЕАЛЬНОЕ ВОЗВРАЩЕНИЕ)
+==================================================================== */
+let popupOpen = false;
+
+function makeContactField(label, value) {
+  if (!value) return '';
+  return `<div class="pc-field"><div class="pc-label">${label}</div><div class="pc-value">${value}</div></div>`;
+}
+
+function openPopup(photo) {
+  if (popupOpen) return;
+  popupOpen = true;
+
+  photo.inPopup = true;
+  photo.popupStartTime = performance.now();
+
+  const rect     = photo.el.getBoundingClientRect();
+  const border   = parseInt(photo.el.style.padding) || CONFIG.border;
+  const photoSrc = photo.el.querySelector('img').src;
+  const initialRotation = photo.rotation; 
+
+  const countsPool = [1, 2, 4];
+  const galleryCount = countsPool[Math.floor(Math.random() * countsPool.length)];
+  
+  const otherPool   = [...PHOTOS].filter(p => !photoSrc.endsWith(p));
+  const galleryImgs = [photoSrc];
+  for (let i = 1; i < galleryCount && otherPool.length; i++) {
+    const idx = Math.floor(Math.random() * otherPool.length);
+    galleryImgs.push(otherPool.splice(idx, 1)[0]);
+  }
+
+  const overlay = document.createElement('div');
+  overlay.id = 'popup-overlay';
+
+  const popupScene = document.createElement('div');
+  popupScene.id = 'popup-scene';
+  
+  Object.assign(popupScene.style, {
+    left:   rect.left   + 'px',
+    top:    rect.top    + 'px',
+    width:  rect.width  + 'px',
+    height: rect.height + 'px',
+    transform: `rotate(${initialRotation}deg)` 
+  });
+
+  const card = document.createElement('div');
+  card.id = 'popup-card';
+
+  const front = document.createElement('div');
+  front.className = 'popup-face popup-front';
+  front.style.padding = border + 'px';
+  const frontImg = document.createElement('img');
+  frontImg.src = photoSrc;
+  front.appendChild(frontImg);
+
+  const back = document.createElement('div');
+  back.className = 'popup-face popup-back';
+
+  const gallery = document.createElement('div');
+  gallery.className = `popup-gallery g${galleryImgs.length}`;
+  
+  galleryImgs.forEach(src => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'img-wrapper';
+    const img = document.createElement('img');
+    img.src = src;
+    wrapper.appendChild(img);
+    gallery.appendChild(wrapper);
+  });
+
+  const maxH = Math.min(window.innerHeight * 0.82, 760); 
+  const imgRatio = 1 / CONFIG.ratio; 
+  
+  let galleryW = 0;
+  let galleryH = maxH;
+
+  if (galleryImgs.length === 1) {
+    galleryW = maxH * imgRatio;
+  } else if (galleryImgs.length === 2) {
+    galleryW = (maxH * imgRatio) * 2;
+  } else if (galleryImgs.length === 4) {
+    galleryW = maxH * imgRatio;
+  }
+
+  const maxAllowedW = window.innerWidth * 0.65;
+  if (galleryW > maxAllowedW) {
+    galleryW = maxAllowedW;
+    galleryH = (galleryImgs.length === 2) ? (galleryW / 2) / imgRatio : galleryW / imgRatio;
+  }
+
+  gallery.style.width = galleryW + 'px';
+
+  const contact = document.createElement('div');
+  contact.className = 'popup-contact';
+  contact.innerHTML = `
+    <div class="pc-name">${CONTACT_INFO.name}</div>
+    <div class="pc-title">${CONTACT_INFO.title}</div>
+    ${makeContactField('Email',     CONTACT_INFO.email)}
+    ${makeContactField('Телефон',   CONTACT_INFO.phone)}
+    ${makeContactField('Instagram', CONTACT_INFO.instagram)}
+    ${makeContactField('Сайт',      CONTACT_INFO.website)}
+    ${CONTACT_INFO.extra ? `<div class="pc-extra">${CONTACT_INFO.extra}</div>` : ''}
+  `;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'popup-close-btn';
+  closeBtn.innerHTML = '✕';
+
+  back.appendChild(gallery);
+  back.appendChild(contact);
+  back.appendChild(closeBtn);
+  card.appendChild(front);
+  card.appendChild(back);
+  popupScene.appendChild(card);
+
+  photo.el.style.opacity = '0';
+  photo.el.style.pointerEvents = 'none';
+
+  document.body.appendChild(overlay);
+  document.body.appendChild(popupScene);
+
+  const finalWidth = galleryW + 300; 
+  const finalL = (window.innerWidth  - finalWidth) / 2;
+  const finalT = (window.innerHeight - galleryH) / 2;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    overlay.style.background = 'rgba(0,0,0,0.85)';
+    card.style.transform = 'rotateY(180deg)';
+    popupScene.style.transitionProperty = 'left, top, width, height, transform';
+    
+    Object.assign(popupScene.style, {
+      left:   finalL     + 'px',
+      top:    finalT     + 'px',
+      width:  finalWidth + 'px',
+      height: galleryH   + 'px',
+      transform: 'rotate(0deg)'
+    });
+  }));
+
+  let closing = false;
+  function doClose() {
+    if (closing) return;
+    closing = true;
+
+    const closeStartTime = performance.now();
+    const elapsedSinceOpen = closeStartTime - photo.popupStartTime;
+    const tempStart = photo.start + elapsedSinceOpen;
+    const t = Math.max(0.001, Math.min(0.97, (closeStartTime - tempStart) / photo.duration));
+    
+    const scale = 0.05 + t * CONFIG.maxScale;
+    const px = photo.x * (0.3 + t * 1.3);
+    const py = photo.y * (0.3 + t * 1.3);
+    
+    const elW = parseFloat(photo.el.style.width)  * scale;
+    const elH = parseFloat(photo.el.style.height) * scale;
+    
+    const returnL = W/2 + px - elW/2;
+    const returnT = H/2 + py - elH/2;
+
+    overlay.style.background = 'rgba(0,0,0,0)';
+    card.style.transform = 'rotateY(0deg)';
+
+    Object.assign(popupScene.style, {
+      left:   returnL + 'px',
+      top:    returnT + 'px',
+      width:  elW     + 'px',
+      height: elH     + 'px',
+      transform: `rotate(${initialRotation}deg)`
+    });
+
+    let closed = false;
+    popupScene.addEventListener('transitionend', function onClosed(e) {
+      if (closed || e.propertyName !== 'width') return;
+      closed = true;
+      popupScene.removeEventListener('transitionend', onClosed);
+
+      const closeDuration = performance.now() - closeStartTime;
+      photo.start += (elapsedSinceOpen + closeDuration);
+      photo.update(performance.now());
+
+      photo.el.style.opacity       = '';
+      photo.el.style.pointerEvents = '';
+      photo.inPopup = false;
+      popupOpen     = false;
+
+      overlay.remove();
+      popupScene.remove();
+    });
+  }
+
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); doClose(); });
+  overlay.addEventListener('click', doClose);
 }
 
 /* ====================================================================
@@ -392,3 +647,201 @@ if (CONFIG.logoEnabled && !logoEl.complete) {
   window.addEventListener('touchmove', e => { const t=e.touches[0]; moveD(t.clientX,t.clientY); }, {passive:true});
   window.addEventListener('touchend', endD);
 })();
+
+/* ====================================================================
+   ПРОСМОТР ФОТО ВО ВЕСЬ ЭКРАН (ГАЛЕРЕЯ С ЗУМОМ)
+==================================================================== */
+class FullscreenViewer {
+  constructor() {
+    this.images = [];
+    this.currentIndex = 0;
+    this.isOpen = false;
+
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+    this.isDragging = false;
+    this.startX = 0;
+    this.startY = 0;
+
+    this.initialDist = 0;
+
+    this._createDOM();
+    this._bindEvents();
+  }
+
+  _createDOM() {
+    this.overlay = document.createElement('div');
+    this.overlay.id = 'fsv-overlay';
+
+    this.overlay.innerHTML = `
+      <div id="fsv-wrapper">
+        <img id="fsv-img" src="" alt="" draggable="false">
+      </div>
+      <button id="fsv-close" class="fsv-btn">✕</button>
+      <button id="fsv-prev" class="fsv-btn">‹</button>
+      <button id="fsv-next" class="fsv-btn">›</button>
+      <div id="fsv-counter"></div>
+    `;
+
+    document.body.appendChild(this.overlay);
+    this.img = this.overlay.querySelector('#fsv-img');
+    this.counter = this.overlay.querySelector('#fsv-counter');
+  }
+
+  open(images, startIndex) {
+    this.images = images;
+    this.currentIndex = startIndex;
+    this.isOpen = true;
+    this.overlay.classList.add('active');
+    this.resetZoom();
+    this.loadImage();
+    
+    this.overlay.querySelector('#fsv-prev').style.display = images.length > 1 ? 'flex' : 'none';
+    this.overlay.querySelector('#fsv-next').style.display = images.length > 1 ? 'flex' : 'none';
+  }
+
+  close() {
+    this.isOpen = false;
+    this.overlay.classList.remove('active');
+  }
+
+  loadImage() {
+    if (!this.images[this.currentIndex]) return;
+    this.img.src = this.images[this.currentIndex];
+    this.counter.textContent = `${this.currentIndex + 1} / ${this.images.length}`;
+    this.resetZoom();
+  }
+
+  resetZoom() {
+    this.scale = 1;
+    this.translateX = 0;
+    this.translateY = 0;
+    this.updateTransform();
+  }
+
+  updateTransform() {
+    this.img.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+  }
+
+  _bindEvents() {
+    this.overlay.querySelector('#fsv-close').addEventListener('click', () => this.close());
+    this.overlay.querySelector('#fsv-prev').addEventListener('click', (e) => { e.stopPropagation(); this.prev(); });
+    this.overlay.querySelector('#fsv-next').addEventListener('click', (e) => { e.stopPropagation(); this.next(); });
+
+    this.overlay.querySelector('#fsv-wrapper').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) this.close();
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (!this.isOpen) return;
+      if (e.key === 'Escape') this.close();
+      if (e.key === 'ArrowLeft') this.prev();
+      if (e.key === 'ArrowRight') this.next();
+    });
+
+    this.overlay.addEventListener('wheel', (e) => {
+      if (!this.isOpen) return;
+      e.preventDefault();
+      const zoomFactor = 0.1;
+      if (e.deltaY < 0) {
+        this.scale = Math.min(this.scale + zoomFactor, 5);
+      } else {
+        this.scale = Math.max(this.scale - zoomFactor, 1);
+        if (this.scale === 1) { this.translateX = 0; this.translateY = 0; }
+      }
+      this.updateTransform();
+    }, { passive: false });
+
+    this.img.addEventListener('dblclick', () => {
+      if (this.scale > 1) {
+        this.resetZoom();
+      } else {
+        this.scale = 2.5;
+        this.updateTransform();
+      }
+    });
+
+    const startDrag = (clientX, clientY) => {
+      this.isDragging = true;
+      this.startX = clientX - this.translateX;
+      this.startY = clientY - this.translateY;
+    };
+
+    const moveDrag = (clientX, clientY) => {
+      if (!this.isDragging || this.scale <= 1) return;
+      this.translateX = clientX - this.startX;
+      this.translateY = clientY - this.startY;
+      this.updateTransform();
+    };
+
+    const endDrag = () => { this.isDragging = false; };
+
+    this.img.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
+    window.addEventListener('mouseup', endDrag);
+
+    this.img.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        startDrag(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
+        this.isDragging = false;
+        this.initialDist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: true });
+
+    this.img.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+        const factor = dist / this.initialDist;
+        this.initialDist = dist;
+        this.scale = Math.max(1, Math.min(this.scale * factor, 5));
+        if (this.scale === 1) { this.translateX = 0; this.translateY = 0; }
+        this.updateTransform();
+      }
+    }, { passive: true });
+
+    this.img.addEventListener('touchend', endDrag);
+    this.img.addEventListener('touchcancel', endDrag);
+  }
+
+  next() {
+    this.currentIndex = (this.currentIndex + 1) % this.images.length;
+    this.loadImage();
+  }
+
+  prev() {
+    this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
+    this.loadImage();
+  }
+}
+
+const globalViewer = new FullscreenViewer();
+
+document.body.addEventListener('click', (e) => {
+  const wrapper = e.target.closest('.popup-gallery .img-wrapper, .popup-front');
+  if (!wrapper) return;
+
+  const clickedImg = wrapper.querySelector('img');
+  if (!clickedImg) return;
+
+  const galleryContainer = wrapper.closest('.popup-gallery');
+  let imgsArray = [];
+  
+  if (galleryContainer) {
+    imgsArray = Array.from(galleryContainer.querySelectorAll('img')).map(img => img.src);
+  } else {
+    imgsArray = [clickedImg.src];
+  }
+
+  const index = imgsArray.indexOf(clickedImg.src);
+  globalViewer.open(imgsArray, index >= 0 ? index : 0);
+});

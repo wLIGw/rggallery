@@ -19,13 +19,15 @@ html, body {
   position: absolute;
   top: 0;
   left: 0;
-  will-change: transform, opacity;
   background: #f2f1ec;
   padding: 14px;
   box-shadow: 0 10px 35px rgba(0,0,0,0.55);
   border-radius: 1px;
-  backface-visibility: hidden;
   box-sizing: border-box;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: flat !important;
+  will-change: transform, opacity;
 }
 
 .photo img {
@@ -36,7 +38,6 @@ html, body {
 }
 
 /* ===================== ПАНЕЛЬ НАСТРОЕК ===================== */
-
 #settings-panel {
   position: fixed;
   top: 20px;
@@ -97,6 +98,8 @@ html, body {
 
 .setting-row {
   margin-bottom: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 .setting-row label {
@@ -106,15 +109,25 @@ html, body {
   font-size: 11.5px;
 }
 
-.setting-row {
-  display: grid;
-  grid-template-columns: 1fr;
-}
-
 .setting-row input[type="range"] {
   width: 100%;
   accent-color: #e8e6df;
   height: 4px;
+}
+
+.setting-row select {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #eee;
+  padding: 6px;
+  border-radius: 6px;
+  outline: none;
+  font-size: 12px;
+}
+
+.setting-row select option {
+  background: #141416;
+  color: #eee;
 }
 
 .setting-row .val {
@@ -126,6 +139,25 @@ html, body {
   opacity: 0.85;
 }
 
+.setting-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 14px 0;
+}
+
+.setting-row--checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
 #settings-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -134,7 +166,6 @@ html, body {
   border-radius: 3px;
 }
 
-/* Стили для кнопок переключения анимаций */
 .page-switcher {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -166,4 +197,273 @@ html, body {
   color: #141416;
   font-weight: 600;
   box-shadow: 0 2px 8px rgba(232, 230, 223, 0.2);
+}
+
+/* ===================== ПОПАП (КАРТОЧКА) ===================== */
+#popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0);
+  z-index: 100001;
+  transition: background 0.6s cubic-bezier(.25, 1, .3, 1);
+  cursor: default;
+}
+
+#popup-scene {
+  position: fixed;
+  z-index: 100002;
+  perspective: 1600px;
+  transition:
+    left   0.65s cubic-bezier(.25, 1, .3, 1),
+    top    0.65s cubic-bezier(.25, 1, .3, 1),
+    width  0.65s cubic-bezier(.25, 1, .3, 1),
+    height 0.65s cubic-bezier(.25, 1, .3, 1);
+}
+
+#popup-card {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(.25, 1, .3, 1);
+  position: relative;
+}
+
+.popup-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.popup-front {
+  background: #0e0e10;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  border-radius: 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.popup-front img {
+  width: 100%; 
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.popup-back {
+  transform: rotateY(180deg);
+  background: #0e0e10;
+  border-radius: 6px;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.95);
+  display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.popup-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  background: #000;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.popup-gallery .img-wrapper {
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  cursor: pointer;
+}
+
+.popup-gallery img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  display: block;
+}
+
+.popup-gallery.g1 .img-wrapper { width: 100%; height: 100%; }
+.popup-gallery.g2 .img-wrapper { width: 50%; height: 100%; }
+.popup-gallery.g4 .img-wrapper { width: 50%; height: 50%; }
+
+.popup-contact {
+  width: 300px;
+  flex-shrink: 0;
+  padding: 40px 36px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-left: 1px solid rgba(255,255,255,0.06);
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  color: #fff;
+  overflow-y: auto;
+  background: #0e0e10;
+}
+
+.pc-name {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+
+.pc-title {
+  font-size: 10px;
+  color: #555;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 36px;
+}
+
+.pc-field { margin-bottom: 20px; }
+
+.pc-label {
+  font-size: 8.5px;
+  color: #555;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.pc-value {
+  font-size: 13px;
+  color: #bbb;
+  line-height: 1.4;
+}
+
+.pc-extra {
+  margin-top: 24px;
+  font-size: 12px;
+  color: #444;
+  line-height: 1.7;
+}
+
+#popup-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.13);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s, transform 0.2s;
+  line-height: 1;
+  font-family: Arial, sans-serif;
+}
+
+#popup-close-btn:hover {
+  background: rgba(255,255,255,0.16);
+  transform: scale(1.1);
+}
+
+/* ===================== ПОЛНОЭКРАННЫЙ ПРОСМОТРЩИК ===================== */
+#fsv-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 5, 5, 0.95);
+  z-index: 200000;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  user-select: none;
+  touch-action: none;
+}
+
+#fsv-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+#fsv-wrapper {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#fsv-img {
+  max-width: 95%;
+  max-height: 95%;
+  object-fit: contain;
+  transition: transform 0.1s ease-out;
+  cursor: grab;
+  will-change: transform;
+}
+
+#fsv-img:active { 
+  cursor: grabbing; 
+}
+
+.fsv-btn {
+  position: absolute;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+  z-index: 200001;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+}
+
+.fsv-btn:hover { 
+  background: rgba(255,255,255,0.15); 
+  transform: scale(1.05); 
+}
+
+#fsv-close { 
+  top: 20px; 
+  right: 20px; 
+  font-family: Arial, sans-serif; 
+}
+
+#fsv-prev { 
+  left: 20px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+}
+
+#fsv-next { 
+  right: 20px; 
+  top: 50%; 
+  transform: translateY(-50%); 
+}
+
+#fsv-prev:hover { 
+  transform: translateY(-50%) scale(1.05); 
+}
+
+#fsv-next:hover { 
+  transform: translateY(-50%) scale(1.05); 
+}
+
+#fsv-counter {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.5);
+  font-family: monospace;
+  font-size: 14px;
+  z-index: 200001;
 }
