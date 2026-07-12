@@ -473,14 +473,10 @@ function _injectPopupStyles() {
       transform: rotateY(180deg); -webkit-transform: rotateY(180deg);
       background: #0e0e10; border-radius: 10px;
       box-shadow: 0 40px 100px rgba(0,0,0,.95);
-      display: flex; overflow: hidden;
+      display: flex; overflow: hidden; border-radius: 0.3px;
     }
     /* Галерея */
-    .popup-gallery {
-      display: grid; overflow: hidden;
-      background: #060607; gap: 4px; padding: 4px;
-      box-sizing: border-box; flex-shrink: 0;
-    }
+  
     .popup-gallery.g1 { grid-template-columns:1fr; grid-template-rows:1fr; }
     .popup-gallery.g2 { grid-template-columns:1fr 1fr; grid-template-rows:1fr; }
     .popup-gallery.g3 { grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; }

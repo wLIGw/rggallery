@@ -15,6 +15,7 @@ html, body {
   overflow: hidden;
 }
 
+/* ===================== КАРТОЧКИ ===================== */
 .photo {
   position: absolute;
   top: 0;
@@ -24,10 +25,18 @@ html, body {
   box-shadow: 0 10px 35px rgba(0,0,0,0.55);
   border-radius: 1px;
   box-sizing: border-box;
+  will-change: transform, opacity;
+
+  /* Антимерцание белых полос на хостинге:
+     overflow:hidden обрезает background по краям при GPU-компоузинге;
+     outline:1px solid transparent убирает субпиксельные артефакты */
+  overflow: hidden;
+  outline: 1px solid transparent;
+
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  transform-style: flat !important;
-  will-change: transform, opacity;
+  transform-style: flat;
+  -webkit-transform-style: flat;
 }
 
 .photo img {
@@ -35,6 +44,9 @@ html, body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  -webkit-user-drag: none;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* ===================== ПАНЕЛЬ НАСТРОЕК ===================== */
@@ -66,9 +78,7 @@ html, body {
   letter-spacing: 0.3px;
 }
 
-#settings-header:active {
-  cursor: grabbing;
-}
+#settings-header:active { cursor: grabbing; }
 
 #settings-toggle {
   background: rgba(255,255,255,0.08);
@@ -82,9 +92,7 @@ html, body {
   line-height: 1;
 }
 
-#settings-toggle:hover {
-  background: rgba(255,255,255,0.18);
-}
+#settings-toggle:hover { background: rgba(255,255,255,0.18); }
 
 #settings-body {
   max-height: 70vh;
@@ -92,9 +100,7 @@ html, body {
   padding: 12px 14px 14px;
 }
 
-#settings-panel.collapsed #settings-body {
-  display: none;
-}
+#settings-panel.collapsed #settings-body { display: none; }
 
 .setting-row {
   margin-bottom: 12px;
@@ -158,9 +164,7 @@ html, body {
   user-select: none;
 }
 
-#settings-body::-webkit-scrollbar {
-  width: 6px;
-}
+#settings-body::-webkit-scrollbar { width: 6px; }
 #settings-body::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.2);
   border-radius: 3px;
@@ -174,8 +178,8 @@ html, body {
 }
 
 .switch-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
   color: #aaa;
   padding: 8px;
   border-radius: 6px;
@@ -186,26 +190,23 @@ html, body {
   text-align: center;
 }
 
-.switch-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
+.switch-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
 
 .switch-btn.active {
   background: #e8e6df;
   border-color: #e8e6df;
   color: #141416;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(232, 230, 223, 0.2);
+  box-shadow: 0 2px 8px rgba(232,230,223,0.2);
 }
 
-/* ===================== ПОПАП (КАРТОЧКА) ===================== */
+/* ===================== ПОПАП ===================== */
 #popup-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0);
   z-index: 100001;
-  transition: background 0.6s cubic-bezier(.25, 1, .3, 1);
+  transition: background 0.6s cubic-bezier(.25,1,.3,1);
   cursor: default;
 }
 
@@ -214,17 +215,19 @@ html, body {
   z-index: 100002;
   perspective: 1600px;
   transition:
-    left   0.65s cubic-bezier(.25, 1, .3, 1),
-    top    0.65s cubic-bezier(.25, 1, .3, 1),
-    width  0.65s cubic-bezier(.25, 1, .3, 1),
-    height 0.65s cubic-bezier(.25, 1, .3, 1);
+    left   0.65s cubic-bezier(.25,1,.3,1),
+    top    0.65s cubic-bezier(.25,1,.3,1),
+    width  0.65s cubic-bezier(.25,1,.3,1),
+    height 0.65s cubic-bezier(.25,1,.3,1),
+    transform 0.4s cubic-bezier(.25,1,.3,1);
 }
 
 #popup-card {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.65s cubic-bezier(.25, 1, .3, 1);
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(.25,1,.3,1);
   position: relative;
 }
 
@@ -244,7 +247,7 @@ html, body {
 }
 
 .popup-front img {
-  width: 100%; 
+  width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
@@ -261,12 +264,14 @@ html, body {
   overflow: hidden;
 }
 
+/* Галерея */
 .popup-gallery {
   display: flex;
   flex-wrap: wrap;
   background: #000;
   box-sizing: border-box;
   height: 100%;
+  flex-shrink: 0;
 }
 
 .popup-gallery .img-wrapper {
@@ -275,20 +280,24 @@ html, body {
   overflow: hidden;
   background: #000;
   display: flex;
-  cursor: pointer;
+  cursor: zoom-in;
 }
 
 .popup-gallery img {
   width: 100%;
   height: 100%;
-  object-fit: cover; 
+  object-fit: cover;
   display: block;
+  transition: transform 0.3s ease;
 }
+
+.popup-gallery .img-wrapper:hover img { transform: scale(1.04); }
 
 .popup-gallery.g1 .img-wrapper { width: 100%; height: 100%; }
 .popup-gallery.g2 .img-wrapper { width: 50%; height: 100%; }
 .popup-gallery.g4 .img-wrapper { width: 50%; height: 50%; }
 
+/* Контакты */
 .popup-contact {
   width: 300px;
   flex-shrink: 0;
@@ -304,44 +313,12 @@ html, body {
   background: #0e0e10;
 }
 
-.pc-name {
-  font-size: 22px;
-  font-weight: 700;
-  margin-bottom: 5px;
-  letter-spacing: -0.2px;
-  line-height: 1.2;
-}
-
-.pc-title {
-  font-size: 10px;
-  color: #555;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 36px;
-}
-
-.pc-field { margin-bottom: 20px; }
-
-.pc-label {
-  font-size: 8.5px;
-  color: #555;
-  letter-spacing: 1.8px;
-  text-transform: uppercase;
-  margin-bottom: 5px;
-}
-
-.pc-value {
-  font-size: 13px;
-  color: #bbb;
-  line-height: 1.4;
-}
-
-.pc-extra {
-  margin-top: 24px;
-  font-size: 12px;
-  color: #444;
-  line-height: 1.7;
-}
+.pc-name  { font-size:22px; font-weight:700; margin-bottom:5px; letter-spacing:-.2px; line-height:1.2; }
+.pc-title { font-size:10px; color:#555; letter-spacing:2px; text-transform:uppercase; margin-bottom:36px; }
+.pc-field { margin-bottom:20px; }
+.pc-label { font-size:8.5px; color:#555; letter-spacing:1.8px; text-transform:uppercase; margin-bottom:5px; }
+.pc-value { font-size:13px; color:#bbb; line-height:1.4; }
+.pc-extra { margin-top:24px; font-size:12px; color:#444; line-height:1.7; }
 
 #popup-close-btn {
   position: absolute;
@@ -364,16 +341,13 @@ html, body {
   font-family: Arial, sans-serif;
 }
 
-#popup-close-btn:hover {
-  background: rgba(255,255,255,0.16);
-  transform: scale(1.1);
-}
+#popup-close-btn:hover { background: rgba(255,255,255,0.16); transform: scale(1.1); }
 
-/* ===================== ПОЛНОЭКРАННЫЙ ПРОСМОТРЩИК ===================== */
+/* ===================== ПОЛНОЭКРАННЫЙ ПРОСМОТР ===================== */
 #fsv-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(5, 5, 5, 0.95);
+  background: rgba(5,5,5,0.95);
   z-index: 200000;
   display: none;
   opacity: 0;
@@ -382,10 +356,7 @@ html, body {
   touch-action: none;
 }
 
-#fsv-overlay.active {
-  display: block;
-  opacity: 1;
-}
+#fsv-overlay.active { display: block; opacity: 1; }
 
 #fsv-wrapper {
   position: absolute;
@@ -405,9 +376,7 @@ html, body {
   will-change: transform;
 }
 
-#fsv-img:active { 
-  cursor: grabbing; 
-}
+#fsv-img:active { cursor: grabbing; }
 
 .fsv-btn {
   position: absolute;
@@ -426,36 +395,13 @@ html, body {
   height: 48px;
 }
 
-.fsv-btn:hover { 
-  background: rgba(255,255,255,0.15); 
-  transform: scale(1.05); 
-}
+.fsv-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
 
-#fsv-close { 
-  top: 20px; 
-  right: 20px; 
-  font-family: Arial, sans-serif; 
-}
-
-#fsv-prev { 
-  left: 20px; 
-  top: 50%; 
-  transform: translateY(-50%); 
-}
-
-#fsv-next { 
-  right: 20px; 
-  top: 50%; 
-  transform: translateY(-50%); 
-}
-
-#fsv-prev:hover { 
-  transform: translateY(-50%) scale(1.05); 
-}
-
-#fsv-next:hover { 
-  transform: translateY(-50%) scale(1.05); 
-}
+#fsv-close { top: 20px; right: 20px; font-family: Arial, sans-serif; }
+#fsv-prev  { left: 20px; top: 50%; transform: translateY(-50%); }
+#fsv-next  { right: 20px; top: 50%; transform: translateY(-50%); }
+#fsv-prev:hover { transform: translateY(-50%) scale(1.05); }
+#fsv-next:hover { transform: translateY(-50%) scale(1.05); }
 
 #fsv-counter {
   position: absolute;
