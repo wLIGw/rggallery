@@ -266,7 +266,10 @@ class Photo {
       this.dragStartTime = performance.now();
       this.el.style.cursor = 'grabbing';
       this.el.setPointerCapture(e.pointerId);
-      this.el.style.zIndex = 9999999;
+      // При перетаскивании — выше максимального z-index летящих карточек
+      // Макс. у летящих: floor(2.0 * 2000) * 100000 ≈ 400 000 000
+      // Ставим 2^31-1 — абсолютный максимум CSS z-index
+      this.el.style.zIndex = 2147483647;
       const rect = this.el.getBoundingClientRect();
       this.pointerOffsetX = e.clientX - (rect.left + rect.width/2);
       this.pointerOffsetY = e.clientY - (rect.top  + rect.height/2);
@@ -330,18 +333,10 @@ class Photo {
 ==================================================================== */
 function startEverything() {
   scene.innerHTML = '';
-  photos = [];
+  photos    = [];
+  gridState = [];
 
-  const avgDuration = (CONFIG.minDuration + CONFIG.maxDuration) / 2 * 1000;
-  const N = Math.ceil(avgDuration / CONFIG.spawnInterval);
-
-  const generatedPoints = [];
-  for (let i = 0; i < N; i++) {
-    const pt = pickSpawnPoint(generatedPoints);
-    generatedPoints.push(pt);
-    photos.push(new Photo(i / N, pt));
-  }
-
+  // Чистый старт: первая карточка появится через один интервал
   setInterval(() => {
     try { photos.push(new Photo(0)); } catch(e) { console.error(e); }
   }, CONFIG.spawnInterval);
@@ -388,15 +383,7 @@ function openPopup(photo) {
   const photoSrc  = photo.el.querySelector('img').src;
   const initialRotation = photo.rotation;
 
-  const countsPool = [1, 2, 4];
-  const galleryCount = countsPool[Math.floor(Math.random() * countsPool.length)];
-
-  const otherPool   = [...PHOTOS].filter(p => !photoSrc.endsWith(p));
   const galleryImgs = [photoSrc];
-  for (let i = 1; i < galleryCount && otherPool.length; i++) {
-    const idx = Math.floor(Math.random() * otherPool.length);
-    galleryImgs.push(otherPool.splice(idx, 1)[0]);
-  }
 
   const overlay = document.createElement('div');
   overlay.id = 'popup-overlay';
@@ -686,18 +673,7 @@ class FullscreenViewer {
 
 const globalViewer = new FullscreenViewer();
 
-document.body.addEventListener('click', e => {
-  const wrapper = e.target.closest('.popup-gallery .img-wrapper');
-  if (!wrapper) return;
-  const clickedImg = wrapper.querySelector('img');
-  if (!clickedImg) return;
-  const galleryEl = wrapper.closest('.popup-gallery');
-  const imgs = galleryEl
-    ? Array.from(galleryEl.querySelectorAll('img')).map(i => i.src)
-    : [clickedImg.src];
-  const idx = imgs.indexOf(clickedImg.src);
-  globalViewer.open(imgs, idx >= 0 ? idx : 0);
-});
+/* клик по галерее в попапе — полноэкранный просмотр отключён */
 
 /* ====================================================================
    ПАНЕЛЬ НАСТРОЕК
