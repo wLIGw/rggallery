@@ -43,7 +43,8 @@ const CONFIG = {
   border:           0,
   logoEnabled:      false,
   logoSize:         310,
-  logoPadding:      0
+  logoPadding:      0,
+  coverage:         50   // % экрана, занимаемый карточками (10–90)
 };
 
 (function loadSavedConfig() {
@@ -143,31 +144,73 @@ function pickSpawnPointRandom(existingPoints = []) {
 }
 
 function pickSpawnPointGrid() {
-  const n    = Math.max(1, Math.round(W * H / 40000));
-  const cols = Math.max(1, Math.round(Math.sqrt(n * W / H)));
-  const rows = Math.max(1, Math.ceil(n / cols));
-  const cellW = W / cols, cellH = H / rows;
-  const cooldown = 400 + (1 - CONFIG.overlap) * 2200;
+  const cardW = Math.max(CONFIG.minWidth, CONFIG.maxWidth);
+
+  // Квадратные ячейки со стороной ~1.6×ширина карточки.
+  // Это даёт минимум 4 строки на экране (нет эффекта "только верх/низ")
+  const cellSide = cardW * 1.6;
+  const cols = Math.max(3, Math.round(W / cellSide));
+  const rows = Math.max(4, Math.round(H / cellSide)); // ← минимум 4 строки
+  const cellW = W / cols;
+  const cellH = H / rows;
+  const totalCells = cols * rows;
+
+  // Cooldown: исходя из coverage — чем меньше %, тем дольше ячейка "пустует"
+  // При coverage=50 cooldown ≈ avg_duration * (1 - 0.5) = половина полёта
+  const avgDur = (CONFIG.minDuration + CONFIG.maxDuration) / 2 * 1000;
+  const cooldown = Math.max(500, avgDur * (1 - CONFIG.coverage / 100));
+
   const now = performance.now();
   gridState = gridState.filter(c => (now - c.time) < cooldown);
-  const occupied = new Set(gridState.map(c => c.col+':'+c.row));
+  const occupied = new Set(gridState.map(c => c.col + ':' + c.row));
+
+  // Все свободные ячейки в случайном порядке
   const free = [];
-  for (let c = 0; c < cols; c++)
-    for (let r = 0; r < rows; r++)
-      if (!occupied.has(c+':'+r)) free.push({col:c,row:r});
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      if (occupied.has(c + ':' + r)) continue;
+      const cx = c * cellW + cellW / 2 - W / 2;
+      const cy = r * cellH + cellH / 2 - H / 2;
+      if (!isTooCloseToLogo(cx, cy)) free.push({ col: c, row: r, cx, cy });
+    }
+  }
 
-  const safeFree = free.filter(cell => {
-    const cx = cell.col * cellW + cellW / 2 - W / 2;
-    const cy = cell.row * cellH + cellH / 2 - H / 2;
-    return !isTooCloseToLogo(cx, cy);
-  });
-  const pool = safeFree.length > 0 ? safeFree : (free.length > 0 ? free : [{col:0,row:0}]);
-  const cell = pool[Math.floor(Math.random() * pool.length)];
+  // Перемешиваем для истинно случайного выбора
+  for (let i = free.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [free[i], free[j]] = [free[j], free[i]];
+  }
 
-  gridState.push({col:cell.col, row:cell.row, time:now});
-  const jx = (Math.random()-0.5)*cellW*(0.15+CONFIG.overlap*0.9);
-  const jy = (Math.random()-0.5)*cellH*(0.15+CONFIG.overlap*0.9);
-  return { x: cell.col*cellW + cellW/2 + jx - W/2, y: cell.row*cellH + cellH/2 + jy - H/2 };
+  let chosen;
+  if (free.length > 0) {
+    chosen = free[0];
+    gridState.push({ col: chosen.col, row: chosen.row, time: now });
+  } else {
+    // Все заняты — берём самую старую
+    if (gridState.length > 0) {
+      gridState.sort((a, b) => a.time - b.time);
+      const old = gridState[0];
+      old.time = now;
+      chosen = {
+        col: old.col, row: old.row,
+        cx:  old.col * cellW + cellW / 2 - W / 2,
+        cy:  old.row * cellH + cellH / 2 - H / 2
+      };
+    } else {
+      const c = Math.floor(Math.random() * cols);
+      const r = Math.floor(Math.random() * rows);
+      chosen = { col: c, row: r, cx: c * cellW + cellW/2 - W/2, cy: r * cellH + cellH/2 - H/2 };
+      gridState.push({ col: c, row: r, time: now });
+    }
+  }
+
+  // Небольшое случайное смещение внутри ячейки
+  const jx = (Math.random() - 0.5) * cellW * 0.25;
+  const jy = (Math.random() - 0.5) * cellH * 0.25;
+  return {
+    x: chosen.cx + jx,
+    y: chosen.cy + jy
+  };
 }
 
 function pickSpawnPoint(existingPoints = []) {
@@ -336,10 +379,19 @@ function startEverything() {
   photos    = [];
   gridState = [];
 
-  // Чистый старт: первая карточка появится через один интервал
-  setInterval(() => {
-    try { photos.push(new Photo(0)); } catch(e) { console.error(e); }
-  }, CONFIG.spawnInterval);
+  // Рекурсивный setTimeout: строго 1 карточка за тик, читает CONFIG динамически
+  (function spawnNext() {
+    const cardW    = Math.max(CONFIG.minWidth, CONFIG.maxWidth);
+    const cardH    = cardW * CONFIG.ratio;
+    const avgScale = 0.05 + CONFIG.maxScale * 0.48;
+    const visArea  = Math.max(100, (cardW * avgScale) * (cardH * avgScale));
+    const maxOnScreen = Math.max(2, Math.round((W * H * (CONFIG.coverage / 100)) / visArea));
+
+    if (photos.length < maxOnScreen) {
+      try { photos.push(new Photo(0)); } catch(e) { console.error(e); }
+    }
+    setTimeout(spawnNext, Math.max(50, CONFIG.spawnInterval));
+  })();
 
   (function animate() {
     const now = performance.now();
@@ -702,6 +754,7 @@ const globalViewer = new FullscreenViewer();
     { id:'s-border',      key:'border',           out:'v-border',      fmt: v => Math.round(v) + ' px' },
     { id:'s-logosize',    key:'logoSize',         out:'v-logosize',    fmt: v => Math.round(v) + ' px' },
     { id:'s-logopadding', key:'logoPadding',      out:'v-logopadding', fmt: v => Math.round(v) + ' px' },
+    { id:'s-coverage',    key:'coverage',         out:'v-coverage',    fmt: v => Math.round(v) + '%'   },
   ];
 
   bindings.forEach(b => {

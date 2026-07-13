@@ -23,7 +23,7 @@
         <button class="switch-btn" onclick="location.href='pages/style2.html'">Анимация 2</button>
       </div>
     </div>
-    
+
     <div class="setting-divider"></div>
 
     <div class="setting-row">
@@ -74,6 +74,12 @@
         <option value="random">Случайно (свободно)</option>
         <option value="grid">Равномерно по всему экрану</option>
       </select>
+    </div>
+
+    <div class="setting-row">
+      <label>Заполнение экрана (%)</label>
+      <input type="range" id="s-coverage" min="10" max="90" step="5">
+      <span class="val" id="v-coverage"></span>
     </div>
 
     <div class="setting-row">
