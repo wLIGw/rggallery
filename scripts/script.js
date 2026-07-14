@@ -286,6 +286,8 @@ class Photo {
     this.popupStartTime = 0;
     this.lastScale      = 0.05;
     this.lastOpacity    = 0;
+    this._lastZBucket   = -1;   // кэш бакета z-index — не обновляем каждый кадр (Firefox FPS)
+    this._willChangeSet = false; // will-change ставим лениво — Chrome не пикселит при спавне
     this.pointerOffsetX = 0;
     this.pointerOffsetY = 0;
     this.dragScreenX    = 0;
@@ -358,16 +360,32 @@ class Photo {
 
     this.lastScale   = scale;
     this.lastOpacity = opacity;
+
+    // ── ФИКС Chrome: будет пиксельным, если will-change задан сразу (рендер при scale=0.05).
+    // Добавляем will-change только когда карточка достаточно выросла (~35% финального размера).
+    // Это означает Chrome растеризует GPU-слой при нормальном размере — чёткая картинка.
+    if (!this._willChangeSet && scale >= 0.35) {
+      this.el.style.willChange = 'transform, opacity';
+      this._willChangeSet = true;
+    }
+
     const x = this.x * (0.3 + t*1.3);
     const y = this.y * (0.3 + t*1.3);
 
+    // translate3d с Z=0.01px: принудительный GPU-путь в Firefox,
+    // убирает белую полосу на правом крае (субпиксельный артефакт композитора)
     this.el.style.transform =
-      `translate(-50%,-50%) translate(${W/2+x}px,${H/2+y}px) scale(${scale}) rotate(${this.rotation}deg)`;
+      `translate(-50%,-50%) translate3d(${W/2+x}px,${H/2+y}px,0.01px) scale(${scale}) rotate(${this.rotation}deg)`;
     this.el.style.opacity = opacity.toFixed(3);
 
-    // Антимерцание: масштабный бакет * большой шаг + стабильный birthId
-    // Карточки одной глубины упорядочиваются по времени рождения — порядок не меняется
-    this.el.style.zIndex = (Math.floor(scale * 2000) * 100000 + this._id) | 0;
+    // ── ФИКС Firefox FPS: style.zIndex меняет порядок отрисовки → reflow.
+    // Обновляем только при смене "эшелона", а не каждый кадр.
+    // Range: 0–20 000, разумный для браузера (было 400 000 000).
+    const zBucket = Math.floor(scale * 100);
+    if (zBucket !== this._lastZBucket) {
+      this._lastZBucket = zBucket;
+      this.el.style.zIndex = zBucket * 1000 + (this._id % 1000);
+    }
   }
 }
 

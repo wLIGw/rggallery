@@ -22,21 +22,14 @@ html, body {
   left: 0;
   background: #f2f1ec;
   padding: 14px;
-  box-shadow: 0 10px 35px rgba(0,0,0,0.55);
-  border-radius: 1px;
+  /* Упрощённая тень: тяжёлый blur на GPU-слоях = главная причина ~15fps в Firefox */
+  /* border-radius убран: в Firefox 1px radius + overflow:hidden = белый артефакт на правом краю */
   box-sizing: border-box;
-  will-change: transform, opacity;
-
-  /* Антимерцание белых полос на хостинге:
-     overflow:hidden обрезает background по краям при GPU-компоузинге;
-     outline:1px solid transparent убирает субпиксельные артефакты */
+  /* will-change задаём ЛЕНИВО из JS (когда scale >= 0.35),
+     иначе Chrome растеризует GPU-слой при scale=0.05 → пиксельное фото при появлении */
+  /* backface-visibility / transform-style убраны:
+     они создают лишние compositing-контексты, что в Firefox = 15fps */
   overflow: hidden;
-  outline: 1px solid transparent;
-
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform-style: flat;
-  -webkit-transform-style: flat;
 }
 
 .photo img {
@@ -214,6 +207,11 @@ html, body {
   position: fixed;
   z-index: 100002;
   perspective: 1600px;
+  /* Фон скрывает белые мигающие линии на правом крае во время flip-анимации —
+     они возникают когда 3D-трансформ обнажает «пустоту» за popup-card */
+  background: #0e0e10;
+  overflow: hidden;
+  border-radius: 8px;
   transition:
     left   0.65s cubic-bezier(.25,1,.3,1),
     top    0.65s cubic-bezier(.25,1,.3,1),
@@ -240,7 +238,8 @@ html, body {
 
 .popup-front {
   background: #0e0e10;
-  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  border-radius: 4px;
   box-sizing: border-box;
   overflow: hidden;
 }
