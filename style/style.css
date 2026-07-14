@@ -10,7 +10,6 @@ html, body {
 #scene {
   position: fixed;
   inset: 0;
-  perspective: 600px;
   perspective-origin: 50% 50%;
   overflow: hidden;
 }
@@ -234,6 +233,10 @@ html, body {
   inset: 0;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  
+  /* ИСПРАВЛЕНИЕ ДЛЯ FIREFOX: принудительное сглаживание краев при 3D */
+  outline: 1px solid transparent; 
+  transform: translateZ(0); 
 }
 
 .popup-front {
@@ -260,6 +263,9 @@ html, body {
   justify-content: flex-start;
   align-items: stretch;
   overflow: hidden;
+  
+  /* ИСПРАВЛЕНИЕ ДЛЯ FIREFOX: убираем микро-просветы на краях */
+  outline: 1px solid transparent;
 }
 
 /* Галерея */
