@@ -232,8 +232,7 @@ class Photo {
     this.el.style.cursor = 'grab';
     this.el.style.touchAction = 'none';
 
-    // УБРАЛИ will-change отсюда! 
-    // Если задать его при scale = 0.05, Chrome сделает картинку пиксельной.
+    // will-change полностью убран, чтобы избежать мыла в Chrome
 
     const pt = predefinedPoint ? predefinedPoint : pickSpawnPoint();
     this.x = pt.x;
@@ -289,8 +288,7 @@ class Photo {
     this.popupStartTime = 0;
     this.lastScale      = 0.05;
     this.lastOpacity    = 0;
-    this._lastZIndex    = -1; // кэш для z-index, чтобы не дергать DOM зря
-    this._willChangeSet = false; // флаг, чтобы не переписывать стиль каждый кадр
+    this._lastZIndex    = -1; // кэш для z-index
     this.pointerOffsetX = 0;
     this.pointerOffsetY = 0;
     this.dragScreenX    = 0;
@@ -315,7 +313,6 @@ class Photo {
       this.el.style.cursor = 'grabbing';
       this.el.setPointerCapture(e.pointerId);
 
-      // При перетаскивании карточка гарантированно становится выше вообще всех элементов
       this.el.style.zIndex = 999999;
       
       const rect = this.el.getBoundingClientRect();
@@ -331,7 +328,6 @@ class Photo {
       this.dragScreenX = e.clientX - this.pointerOffsetX;
       this.dragScreenY = e.clientY - this.pointerOffsetY;
       
-      // Перетаскивание в 2D (translate)
       this.el.style.transform =
         `translate(${this.dragScreenX}px, ${this.dragScreenY}px) translate(-50%, -50%) scale(${this.lastScale}) rotate(${this.rotation}deg)`;
     });
@@ -372,20 +368,13 @@ class Photo {
     const posX = W / 2 + x;
     const posY = H / 2 + y;
 
-    // Включаем will-change ЛЕНИВО: только когда масштаб уже достаточно большой (>= 0.35)
-    // До этого момента Chrome рендерит в максимальном качестве
-    if (scale >= 0.35 && !this._willChangeSet) {
-      this.el.style.willChange = 'transform, opacity';
-      this._willChangeSet = true;
-    }
-
-    // Чистый 2D translate
+    // Чистый 2D-перевод без конфликтов слоев
     this.el.style.transform =
       `translate(${posX}px, ${posY}px) translate(-50%, -50%) scale(${scale}) rotate(${this.rotation}deg)`;
     
     this.el.style.opacity = opacity;
 
-    // Плавная и безопасная сортировка слоев
+    // Безопасная z-index сортировка
     const newZIndex = Math.floor(scale * 2000) + (this._id % 100);
     if (newZIndex !== this._lastZIndex) {
       this._lastZIndex = newZIndex;
