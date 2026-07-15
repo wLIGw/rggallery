@@ -7,16 +7,12 @@ const PHOTOS = [
 ];
 
 /* ====================================================================
-   КОНТАКТНЫЕ ДАННЫЕ
+   КОНТАКТНЫЕ ДАННЫЕ (ТРИ СТРОЧКИ ДЛЯ ПОПАПА)
 ==================================================================== */
 const CONTACT_INFO = {
-  name:      'Ваше Имя',
-  title:     'Фотограф / Художник',
-  email:     'hello@example.com',
-  phone:     '+7 (999) 000-00-00',
-  instagram: '@yourinstagram',
-  website:   'www.yoursite.com',
-  extra:     ''
+  title:      'Rock crystal ring in 18K gold', // 1 строчка
+  meta:       'Moscow, Russia, 2016',               // 2 строчка
+  collection: 'in private collectoin - Japan'       // 3 строчка
 };
 
 const scene = document.getElementById('scene');
@@ -146,17 +142,13 @@ function pickSpawnPointRandom(existingPoints = []) {
 function pickSpawnPointGrid() {
   const cardW = Math.max(CONFIG.minWidth, CONFIG.maxWidth);
 
-  // Квадратные ячейки со стороной ~1.6×ширина карточки.
-  // Это даёт минимум 4 строки на экране (нет эффекта "только верх/низ")
   const cellSide = cardW * 1.6;
   const cols = Math.max(3, Math.round(W / cellSide));
-  const rows = Math.max(4, Math.round(H / cellSide)); // ← минимум 4 строки
+  const rows = Math.max(4, Math.round(H / cellSide));
   const cellW = W / cols;
   const cellH = H / rows;
   const totalCells = cols * rows;
 
-  // Cooldown: исходя из coverage — чем меньше %, тем дольше ячейка "пустует"
-  // При coverage=50 cooldown ≈ avg_duration * (1 - 0.5) = половина полёта
   const avgDur = (CONFIG.minDuration + CONFIG.maxDuration) / 2 * 1000;
   const cooldown = Math.max(500, avgDur * (1 - CONFIG.coverage / 100));
 
@@ -164,7 +156,6 @@ function pickSpawnPointGrid() {
   gridState = gridState.filter(c => (now - c.time) < cooldown);
   const occupied = new Set(gridState.map(c => c.col + ':' + c.row));
 
-  // Все свободные ячейки в случайном порядке
   const free = [];
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
@@ -175,7 +166,6 @@ function pickSpawnPointGrid() {
     }
   }
 
-  // Перемешиваем для истинно случайного выбора
   for (let i = free.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [free[i], free[j]] = [free[j], free[i]];
@@ -186,7 +176,6 @@ function pickSpawnPointGrid() {
     chosen = free[0];
     gridState.push({ col: chosen.col, row: chosen.row, time: now });
   } else {
-    // Все заняты — берём самую старую
     if (gridState.length > 0) {
       gridState.sort((a, b) => a.time - b.time);
       const old = gridState[0];
@@ -204,7 +193,6 @@ function pickSpawnPointGrid() {
     }
   }
 
-  // Небольшое случайное смещение внутри ячейки
   const jx = (Math.random() - 0.5) * cellW * 0.25;
   const jy = (Math.random() - 0.5) * cellH * 0.25;
   return {
@@ -220,19 +208,17 @@ function pickSpawnPoint(existingPoints = []) {
 /* ====================================================================
    Класс Photo
 ==================================================================== */
-let _photoCounter = 0; // для стабильного z-index (антимерцание)
+let _photoCounter = 0;
 
 class Photo {
   constructor(initialAgeFraction, predefinedPoint = null) {
-    this._id = ++_photoCounter; // уникальный ID для сортировки слоев
+    this._id = ++_photoCounter;
 
     this.el = document.createElement('div');
     this.el.className = 'photo';
     this.el.style.padding = CONFIG.border + 'px';
     this.el.style.cursor = 'grab';
     this.el.style.touchAction = 'none';
-
-    // will-change не трогаем, пусть браузер сам решает когда оптимизировать на лету
 
     const pt = predefinedPoint ? predefinedPoint : pickSpawnPoint();
     this.x = pt.x;
@@ -288,7 +274,7 @@ class Photo {
     this.popupStartTime = 0;
     this.lastScale      = 0.05;
     this.lastOpacity    = 0;
-    this._lastZIndex    = -1; // кэш для z-index
+    this._lastZIndex    = -1;
     this.pointerOffsetX = 0;
     this.pointerOffsetY = 0;
     this.dragScreenX    = 0;
@@ -328,7 +314,6 @@ class Photo {
       this.dragScreenX = e.clientX - this.pointerOffsetX;
       this.dragScreenY = e.clientY - this.pointerOffsetY;
       
-      // Возвращаем кристально чистый 2D-трансформ для перетаскивания
       this.el.style.transform =
         `translate(${this.dragScreenX}px, ${this.dragScreenY}px) translate(-50%, -50%) scale(${this.lastScale}) rotate(${this.rotation}deg)`;
     });
@@ -369,14 +354,11 @@ class Photo {
     const posX = W / 2 + x;
     const posY = H / 2 + y;
 
-    // Никакого 3D! Чистый 2D translate гарантирует, что текстура
-    // картинки рендерится в своем оригинальном, максимально четком разрешении.
     this.el.style.transform =
       `translate(${posX}px, ${posY}px) translate(-50%, -50%) scale(${scale}) rotate(${this.rotation}deg)`;
     
     this.el.style.opacity = opacity;
 
-    // Сортировка слоев по z-index работает безотказно
     const newZIndex = Math.floor(scale * 2000) + (this._id % 100);
     if (newZIndex !== this._lastZIndex) {
       this._lastZIndex = newZIndex;
@@ -386,14 +368,13 @@ class Photo {
 }
 
 /* ====================================================================
-   Запуск анимации — чистый старт, карточки появляются с нуля
+   Запуск анимации
 ==================================================================== */
 function startEverything() {
   scene.innerHTML = '';
   photos    = [];
   gridState = [];
 
-  // Рекурсивный setTimeout: строго 1 карточка за тик, читает CONFIG динамически
   (function spawnNext() {
     const cardW    = Math.max(CONFIG.minWidth, CONFIG.maxWidth);
     const cardH    = cardW * CONFIG.ratio;
@@ -427,15 +408,7 @@ if (CONFIG.logoEnabled && !logoEl.complete) {
   setTimeout(startEverything, 40);
 }
 
-/* ====================================================================
-   ПОПАП
-==================================================================== */
 let popupOpen = false;
-
-function makeContactField(label, value) {
-  if (!value) return '';
-  return `<div class="pc-field"><div class="pc-label">${label}</div><div class="pc-value">${value}</div></div>`;
-}
 
 function openPopup(photo) {
   if (popupOpen) return;
@@ -449,83 +422,114 @@ function openPopup(photo) {
   const photoSrc  = photo.el.querySelector('img').src;
   const initialRotation = photo.rotation;
 
-  const galleryImgs = [photoSrc];
-
   const overlay = document.createElement('div');
   overlay.id = 'popup-overlay';
 
+  // Проверяем, мобильное ли устройство
+  const isMobile = window.innerWidth <= 768;
+
+  let galleryW, galleryH, finalL, finalT;
+  const imgRatio = 1 / CONFIG.ratio;
+  const textWidth = isMobile ? 0 : 300; // На мобилке текст снизу, ширину сцены не увеличивает
+
+  if (isMobile) {
+    // 1. Мобильная логика: попап занимает 85% ширины экрана (комфортные 80-85%)
+    galleryW = Math.round(window.innerWidth * 0.85);
+    galleryH = Math.round(galleryW / imgRatio); // Высота фото по его пропорциям
+
+    // Примерная высота текстового блока на телефоне, чтобы учесть её в центрировании
+    const estimatedTextH = 135; 
+
+    // Защита от слишком длинных вертикальных фото: если вся конструкция выше 82% экрана, уменьшаем фото
+    if (galleryH + estimatedTextH > window.innerHeight * 0.82) {
+      galleryH = Math.round(window.innerHeight * 0.82 - estimatedTextH);
+      galleryW = Math.round(galleryH * imgRatio);
+    }
+
+    // Центрируем всю сборку (Фото + Текст под ним) по экрану
+    finalL = Math.round((window.innerWidth - galleryW) / 2);
+    finalT = Math.round((window.innerHeight - (galleryH + estimatedTextH)) / 2);
+    
+    // Страховка от вылета за верхнюю границу экрана
+    if (finalT < 16) finalT = 16;
+
+  } else {
+    // 2. Десктопная логика (оставляем без изменений)
+    const maxH = Math.round(Math.min(window.innerHeight * 0.82, 760));
+    galleryW = Math.round(maxH * imgRatio);
+    galleryH = maxH;
+
+    const maxAllowedW = Math.round(window.innerWidth * 0.7 - textWidth);
+    if (galleryW > maxAllowedW) {
+      galleryW = maxAllowedW;
+      galleryH = Math.round(galleryW / imgRatio);
+    }
+
+    const totalWidth = galleryW + textWidth;
+    finalL = Math.round((window.innerWidth - totalWidth) / 2);
+    finalT = Math.round((window.innerHeight - galleryH) / 2);
+  }
+
+  // Создаем сцену, размеры которой всегда равны размерам ФОТОГРАФИИ.
+  // Это критично, чтобы 3D-полет из сетки происходил бесшовно пиксель-в-пиксель.
   const popupScene = document.createElement('div');
   popupScene.id = 'popup-scene';
-  Object.assign(popupScene.style, {
-    left:   rect.left   + 'px',
-    top:    rect.top    + 'px',
-    width:  rect.width  + 'px',
-    height: rect.height + 'px',
-    transform: `rotate(${initialRotation}deg)`
-  });
+  popupScene.style.width  = galleryW + 'px';
+  popupScene.style.height = galleryH + 'px';
 
+  // Карточка
   const card = document.createElement('div');
   card.id = 'popup-card';
 
+  // Лицевая сторона
   const front = document.createElement('div');
   front.className = 'popup-face popup-front';
   front.style.padding = border + 'px';
+  
+  const frontImgWrapper = document.createElement('div');
+  frontImgWrapper.style.cssText = 'width:100%;height:100%;overflow:hidden;';
   const frontImg = document.createElement('img');
   frontImg.src = photoSrc;
-  front.appendChild(frontImg);
+  frontImgWrapper.appendChild(frontImg);
+  front.appendChild(frontImgWrapper);
 
+  // Обратная сторона
   const back = document.createElement('div');
   back.className = 'popup-face popup-back';
 
+  // Галерея внутри обратной стороны
   const gallery = document.createElement('div');
-  gallery.className = `popup-gallery g${galleryImgs.length}`;
+  gallery.className = 'popup-gallery g1';
+  gallery.style.padding = border + 'px';
+  gallery.style.width = '100%';
+  gallery.style.height = '100%';
+  
+  const wrapper = document.createElement('div');
+  wrapper.className = 'img-wrapper';
+  wrapper.style.cssText = 'width:100%;height:100%;';
+  const img = document.createElement('img');
+  img.src = photoSrc;
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;'; 
+  wrapper.appendChild(img);
+  gallery.appendChild(wrapper);
+  back.appendChild(gallery);
 
-  galleryImgs.forEach(src => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'img-wrapper';
-    const img = document.createElement('img');
-    img.src = src;
-    wrapper.appendChild(img);
-    gallery.appendChild(wrapper);
-  });
-
-  const maxH = Math.min(window.innerHeight * 0.82, 760);
-  const imgRatio = 1 / CONFIG.ratio;
-
-  let galleryW = 0;
-  let galleryH = maxH;
-
-  if (galleryImgs.length === 1)      galleryW = maxH * imgRatio;
-  else if (galleryImgs.length === 2) galleryW = (maxH * imgRatio) * 2;
-  else if (galleryImgs.length === 4) galleryW = maxH * imgRatio;
-
-  const maxAllowedW = window.innerWidth * 0.65;
-  if (galleryW > maxAllowedW) {
-    galleryW = maxAllowedW;
-    galleryH = (galleryImgs.length === 2) ? (galleryW / 2) / imgRatio : galleryW / imgRatio;
-  }
-
-  gallery.style.width = galleryW + 'px';
-
+  // Панель контактов
   const contact = document.createElement('div');
   contact.className = 'popup-contact';
   contact.innerHTML = `
-    <div class="pc-name">${CONTACT_INFO.name}</div>
-    <div class="pc-title">${CONTACT_INFO.title}</div>
-    ${makeContactField('Email',     CONTACT_INFO.email)}
-    ${makeContactField('Телефон',   CONTACT_INFO.phone)}
-    ${makeContactField('Instagram', CONTACT_INFO.instagram)}
-    ${makeContactField('Сайт',      CONTACT_INFO.website)}
-    ${CONTACT_INFO.extra ? `<div class="pc-extra">${CONTACT_INFO.extra}</div>` : ''}
+    <div class="pc-name" style="margin-bottom: 8px; font-size: 18px; font-weight: 600; line-height:1.2;">${CONTACT_INFO.title}</div>
+    <div class="pc-title" style="margin-bottom: 12px; font-size: 14px; color: #555;">${CONTACT_INFO.meta}</div>
+    <div class="pc-value" style="font-size: 13px; color: #777; font-style: italic;">${CONTACT_INFO.collection}</div>
   `;
+  back.appendChild(contact);
 
+  // Кнопка закрытия
   const closeBtn = document.createElement('button');
   closeBtn.id = 'popup-close-btn';
   closeBtn.innerHTML = '✕';
-
-  back.appendChild(gallery);
-  back.appendChild(contact);
   back.appendChild(closeBtn);
+
   card.appendChild(front);
   card.appendChild(back);
   popupScene.appendChild(card);
@@ -536,56 +540,77 @@ function openPopup(photo) {
   document.body.appendChild(overlay);
   document.body.appendChild(popupScene);
 
-  const finalWidth = galleryW + 300;
-  const finalL = (window.innerWidth  - finalWidth) / 2;
-  const finalT = (window.innerHeight - galleryH)   / 2;
+  // Вычисление стартового масштаба под миниатюру
+  const startScaleX = rect.width / galleryW;
+  const startScaleY = rect.height / galleryH;
 
+  popupScene.style.transition = 'none';
+  popupScene.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0) scale(${startScaleX}, ${startScaleY}) rotate(${initialRotation}deg)`;
+
+  // Запуск анимации открытия
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    overlay.style.background = 'rgba(0,0,0,0.85)';
-    card.style.transform = 'rotateY(180deg)';
-    popupScene.style.transitionProperty = 'left, top, width, height, transform';
-
-    Object.assign(popupScene.style, {
-      left:      finalL     + 'px',
-      top:       finalT     + 'px',
-      width:     finalWidth + 'px',
-      height:    galleryH   + 'px',
-      transform: 'rotate(0deg)'
-    });
+    overlay.classList.add('active'); // Включаем затемнение
+    card.style.transform = 'rotateY(180deg)'; // Переворачиваем 3D карту
+    
+    // Мягко проявляем текст в процессе флипа
+    setTimeout(() => { contact.classList.add('active'); }, 150);
+    
+    popupScene.style.transition = 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)';
+    popupScene.style.transform = `translate3d(${finalL}px, ${finalT}px, 0) scale(1, 1) rotate(0deg)`;
   }));
+
+  function onOpenTransitionEnd(e) {
+    if (e.target !== popupScene) return;
+    popupScene.removeEventListener('transitionend', onOpenTransitionEnd);
+    popupScene.style.willChange = 'auto';
+    card.style.willChange = 'auto';
+  }
+  popupScene.addEventListener('transitionend', onOpenTransitionEnd);
 
   let closing = false;
   function doClose() {
     if (closing) return;
     closing = true;
 
+    popupScene.style.willChange = 'transform, opacity';
+    card.style.willChange = 'transform';
+
+    // Прячем текст моментально перед закрытием, чтобы не торчал черным куском
+    contact.classList.remove('active');
+
     const closeStartTime = performance.now();
     const elapsedSinceOpen = closeStartTime - photo.popupStartTime;
     const tempStart = photo.start + elapsedSinceOpen;
+    
     const t = Math.max(0.001, Math.min(0.97, (closeStartTime - tempStart) / photo.duration));
+    const currentScale = 0.05 + t * CONFIG.maxScale;
 
-    const scale = 0.05 + t * CONFIG.maxScale;
+    const origW = parseFloat(photo.el.style.width);
+    const origH = parseFloat(photo.el.style.height);
+
+    const targetW = origW * currentScale;
+    const targetH = origH * currentScale;
+
     const px = photo.x * (0.3 + t * 1.3);
     const py = photo.y * (0.3 + t * 1.3);
-    const elW = parseFloat(photo.el.style.width)  * scale;
-    const elH = parseFloat(photo.el.style.height) * scale;
-    const returnL = W/2 + px - elW/2;
-    const returnT = H/2 + py - elH/2;
 
-    overlay.style.background = 'rgba(0,0,0,0)';
+    const returnL = W/2 + px - targetW/2;
+    const returnT = H/2 + py - targetH/2;
+
+    const endScaleX = targetW / galleryW;
+    const endScaleY = targetH / galleryH;
+
+    overlay.classList.remove('active');
     card.style.transform = 'rotateY(0deg)';
 
-    Object.assign(popupScene.style, {
-      left:      returnL + 'px',
-      top:       returnT + 'px',
-      width:     elW     + 'px',
-      height:    elH     + 'px',
-      transform: `rotate(${initialRotation}deg)`
-    });
+    popupScene.style.transition = 'transform 0.65s cubic-bezier(0.25, 1, 0.5, 1)';
+    popupScene.style.transform = `translate3d(${returnL}px, ${returnT}px, 0) scale(${endScaleX}, ${endScaleY}) rotate(${initialRotation}deg)`;
 
     let closed = false;
     popupScene.addEventListener('transitionend', function onClosed(e) {
-      if (closed || e.propertyName !== 'width') return;
+      if (e.target !== popupScene) return; 
+      if (closed || e.propertyName !== 'transform') return;
+      
       closed = true;
       popupScene.removeEventListener('transitionend', onClosed);
 
@@ -738,8 +763,6 @@ class FullscreenViewer {
 }
 
 const globalViewer = new FullscreenViewer();
-
-/* клик по галерее в попапе — полноэкранный просмотр отключён */
 
 /* ====================================================================
    ПАНЕЛЬ НАСТРОЕК
