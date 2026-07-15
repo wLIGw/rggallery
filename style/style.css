@@ -24,8 +24,11 @@ html, body {
   box-sizing: border-box;
   overflow: hidden;
   
-  /* Разрешаем браузеру субпиксельное позиционирование для идеальной плавности */
+  /* Разрешаем субпиксельное позиционирование для плавности */
   transform-origin: center center;
+
+  /* УБРАЛИ will-change и translateZ! Теперь Chrome не будет кешировать 
+     картинки в низком разрешении, и они будут идеально четкими при любом масштабе */
 }
 
 .photo img {
@@ -36,10 +39,13 @@ html, body {
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
+  
+  /* Дополнительно заставим Chrome использовать качественное сглаживание при масштабировании */
+  image-rendering: auto; 
 }
+
 /* ===================== ПАНЕЛЬ НАСТРОЕК ===================== */
 #settings-panel {
-  z-index: 9999999 !important;
   position: fixed;
   top: 20px;
   left: 20px;
@@ -47,7 +53,7 @@ html, body {
   background: rgba(20, 20, 22, 0.92);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
-  z-index: 9999;
+  z-index: 9999999 !important; /* Оставили один максимальный z-index */
   color: #eee;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   font-size: 13px;
@@ -84,6 +90,8 @@ html, body {
 #settings-toggle:hover { background: rgba(255,255,255,0.18); }
 
 #settings-body {
+  /* ИСПРАВЛЕНО: Текст обернут в комментарий, чтобы не ломать CSS */
+  /* Удобные отступы для пальцев */
   max-height: 70vh;
   overflow-y: auto;
   padding: 12px 14px 14px;
@@ -194,10 +202,19 @@ html, body {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0);
-  z-index: 1;
+  
+  /* ИСПРАВЛЕНО: Поместили слой строго под попап, но ПОВЕРХ летящих картинок */
+  z-index: 100001; 
   transition: background 0.45s ease;
   cursor: default;
+  
+  /* ОПТИМИЗАЦИЯ GPU: плавное затухание без мерцания */
+  will-change: background-color;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
 }
+
 #popup-overlay.active {
   background: rgba(0,0,0,0.85);
 }
@@ -209,6 +226,11 @@ html, body {
   background: transparent;
   overflow: visible;
   transform-origin: top left;
+  
+  /* ОПТИМИЗАЦИЯ GPU */
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 #popup-card {
@@ -218,6 +240,9 @@ html, body {
   -webkit-transform-style: preserve-3d;
   transition: transform 0.65s cubic-bezier(.25,1,.3,1);
   position: relative;
+  
+  /* ОПТИМИЗАЦИЯ GPU */
+  will-change: transform;
 }
 
 .popup-face {
