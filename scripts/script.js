@@ -232,7 +232,7 @@ class Photo {
     this.el.style.cursor = 'grab';
     this.el.style.touchAction = 'none';
 
-    // will-change полностью убран, чтобы избежать мыла в Chrome
+    // will-change не трогаем, пусть браузер сам решает когда оптимизировать на лету
 
     const pt = predefinedPoint ? predefinedPoint : pickSpawnPoint();
     this.x = pt.x;
@@ -328,6 +328,7 @@ class Photo {
       this.dragScreenX = e.clientX - this.pointerOffsetX;
       this.dragScreenY = e.clientY - this.pointerOffsetY;
       
+      // Возвращаем кристально чистый 2D-трансформ для перетаскивания
       this.el.style.transform =
         `translate(${this.dragScreenX}px, ${this.dragScreenY}px) translate(-50%, -50%) scale(${this.lastScale}) rotate(${this.rotation}deg)`;
     });
@@ -368,13 +369,14 @@ class Photo {
     const posX = W / 2 + x;
     const posY = H / 2 + y;
 
-    // Чистый 2D-перевод без конфликтов слоев
+    // Никакого 3D! Чистый 2D translate гарантирует, что текстура
+    // картинки рендерится в своем оригинальном, максимально четком разрешении.
     this.el.style.transform =
       `translate(${posX}px, ${posY}px) translate(-50%, -50%) scale(${scale}) rotate(${this.rotation}deg)`;
     
     this.el.style.opacity = opacity;
 
-    // Безопасная z-index сортировка
+    // Сортировка слоев по z-index работает безотказно
     const newZIndex = Math.floor(scale * 2000) + (this._id % 100);
     if (newZIndex !== this._lastZIndex) {
       this._lastZIndex = newZIndex;

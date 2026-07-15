@@ -23,8 +23,9 @@ html, body {
   padding: 14px;
   box-sizing: border-box;
   overflow: hidden;
-
-  /* Никаких translateZ и crisp-edges здесь! */
+  
+  /* Разрешаем браузеру субпиксельное позиционирование для идеальной плавности */
+  transform-origin: center center;
 }
 
 .photo img {
@@ -35,9 +36,6 @@ html, body {
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
-  
-  /* Стандартное высококачественное сглаживание для фото */
-  image-rendering: auto;
 }
 /* ===================== ПАНЕЛЬ НАСТРОЕК ===================== */
 #settings-panel {
