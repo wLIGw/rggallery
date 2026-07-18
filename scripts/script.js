@@ -40,7 +40,9 @@ const CONFIG = {
   logoEnabled:      false,
   logoSize:         310,
   logoPadding:      0,
-  coverage:         50   // % экрана, занимаемый карточками (10–90)
+  coverage:         50,   // % экрана, занимаемый карточками (10–90)
+  welcomeEnabled:   true, // показывать окно приветствия
+  welcomeDelay:     5.0   // задержка перед показом (сек)
 };
 
 (function loadSavedConfig() {
@@ -92,6 +94,7 @@ function getLogoBlockZone() {
 ==================================================================== */
 let gridState = [];
 let photos    = [];
+let welcomeTimerId = null;
 
 function isTooCloseToLogo(x, y) {
   if (!CONFIG.logoEnabled) return false;
@@ -368,12 +371,58 @@ class Photo {
 }
 
 /* ====================================================================
+   ОКНО ПРИВЕТСТВИЯ
+==================================================================== */
+function initWelcomeTimer() {
+  if (welcomeTimerId) clearTimeout(welcomeTimerId);
+  if (CONFIG.welcomeEnabled) {
+    welcomeTimerId = setTimeout(() => { openWelcomePopup(); }, CONFIG.welcomeDelay * 1000);
+  }
+}
+
+function openWelcomePopup() {
+  const overlay = document.getElementById('welcome-overlay');
+  if (!overlay) return;
+
+  // Автоматически внедряем логотип в модальное окно, если его там ещё нет
+  const content = overlay.querySelector('.welcome-content');
+  if (content && !content.querySelector('.welcome-logo')) {
+    const welcomeLogo = document.createElement('img');
+    welcomeLogo.className = 'welcome-logo';
+    welcomeLogo.src = 'img/logo_white.png';
+    welcomeLogo.alt = 'Logo';
+    content.insertBefore(welcomeLogo, content.firstChild);
+  }
+
+  overlay.classList.add('active');
+
+  const closeBtn = document.getElementById('welcome-close') || overlay.querySelector('.welcome-close-btn');
+  if (closeBtn && !closeBtn.dataset.listenerAttached) {
+    closeBtn.addEventListener('click', closeWelcomePopup);
+    closeBtn.dataset.listenerAttached = 'true';
+  }
+
+  if (!overlay.dataset.listenerAttached) {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeWelcomePopup();
+    });
+    overlay.dataset.listenerAttached = 'true';
+  }
+}
+
+function closeWelcomePopup() {
+  const overlay = document.getElementById('welcome-overlay');
+  if (overlay) overlay.classList.remove('active');
+}
+
+/* ====================================================================
    Запуск анимации
 ==================================================================== */
 function startEverything() {
   scene.innerHTML = '';
   photos    = [];
   gridState = [];
+  initWelcomeTimer();
 
   (function spawnNext() {
     const cardW    = Math.max(CONFIG.minWidth, CONFIG.maxWidth);
@@ -518,9 +567,9 @@ function openPopup(photo) {
   const contact = document.createElement('div');
   contact.className = 'popup-contact';
   contact.innerHTML = `
-    <div class="pc-name" style="margin-bottom: 8px; font-size: 18px; font-weight: 600; line-height:1.2;">${CONTACT_INFO.title}</div>
-    <div class="pc-title" style="margin-bottom: 12px; font-size: 14px; color: #555;">${CONTACT_INFO.meta}</div>
-    <div class="pc-value" style="font-size: 13px; color: #777; font-style: italic;">${CONTACT_INFO.collection}</div>
+    <div class="pc-name" style="margin-bottom: 8px; font-size: 28px; font-weight: 600; line-height:1.2;">${CONTACT_INFO.title}</div>
+    <div class="pc-title" style="margin-bottom: 12px; font-size: 18px; color: #555;">${CONTACT_INFO.meta}</div>
+    <div class="pc-value" style="font-size: 16px; color: #777; font-style: italic;">${CONTACT_INFO.collection}</div>
   `;
   back.appendChild(contact);
 
@@ -792,6 +841,7 @@ const globalViewer = new FullscreenViewer();
     { id:'s-logosize',    key:'logoSize',         out:'v-logosize',    fmt: v => Math.round(v) + ' px' },
     { id:'s-logopadding', key:'logoPadding',      out:'v-logopadding', fmt: v => Math.round(v) + ' px' },
     { id:'s-coverage',    key:'coverage',         out:'v-coverage',    fmt: v => Math.round(v) + '%'   },
+    { id:'s-welcomedelay',key:'welcomeDelay',     out:'v-welcomedelay',fmt: v => Math.round(v) + ' с'  },
   ];
 
   bindings.forEach(b => {
@@ -804,6 +854,7 @@ const globalViewer = new FullscreenViewer();
       CONFIG[b.key] = parseFloat(input.value);
       out.textContent = b.fmt(CONFIG[b.key]);
       if (b.key === 'logoSize') updateLogoSize();
+      if (b.key === 'welcomeDelay') initWelcomeTimer();
       saveConfig();
     });
   });
@@ -818,6 +869,29 @@ const globalViewer = new FullscreenViewer();
       setLogoVisible(CONFIG.logoEnabled);
       logoOptions.style.display = CONFIG.logoEnabled ? 'block' : 'none';
       saveConfig();
+    });
+  }
+
+  // Чекбокс окна приветствия (элементы опциональны — если их нет в HTML, просто ничего не произойдёт)
+  const welcomeCheck   = document.getElementById('s-welcome');
+  const welcomeOptions = document.getElementById('welcome-options');
+  if (welcomeCheck && welcomeOptions) {
+    welcomeCheck.checked = CONFIG.welcomeEnabled;
+    welcomeOptions.style.display = CONFIG.welcomeEnabled ? 'block' : 'none';
+    welcomeCheck.addEventListener('change', () => {
+      CONFIG.welcomeEnabled = welcomeCheck.checked;
+      welcomeOptions.style.display = CONFIG.welcomeEnabled ? 'block' : 'none';
+      initWelcomeTimer();
+      saveConfig();
+    });
+  }
+
+  // Тестовая кнопка окна приветствия (опционально)
+  const testBtn = document.getElementById('btn-test-welcome');
+  if (testBtn) {
+    testBtn.addEventListener('click', e => {
+      e.preventDefault();
+      openWelcomePopup();
     });
   }
 

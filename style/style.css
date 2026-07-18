@@ -23,12 +23,7 @@ html, body {
   padding: 14px;
   box-sizing: border-box;
   overflow: hidden;
-  
-  /* Разрешаем субпиксельное позиционирование для плавности */
   transform-origin: center center;
-
-  /* УБРАЛИ will-change и translateZ! Теперь Chrome не будет кешировать 
-     картинки в низком разрешении, и они будут идеально четкими при любом масштабе */
 }
 
 .photo img {
@@ -39,8 +34,6 @@ html, body {
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
-  
-  /* Дополнительно заставим Chrome использовать качественное сглаживание при масштабировании */
   image-rendering: auto; 
 }
 
@@ -53,7 +46,7 @@ html, body {
   background: rgba(20, 20, 22, 0.92);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
-  z-index: 9999999 !important; /* Оставили один максимальный z-index */
+  z-index: 9999999 !important; 
   color: #eee;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   font-size: 13px;
@@ -90,8 +83,6 @@ html, body {
 #settings-toggle:hover { background: rgba(255,255,255,0.18); }
 
 #settings-body {
-  /* ИСПРАВЛЕНО: Текст обернут в комментарий, чтобы не ломать CSS */
-  /* Удобные отступы для пальцев */
   max-height: 70vh;
   overflow-y: auto;
   padding: 12px 14px 14px;
@@ -197,18 +188,14 @@ html, body {
   box-shadow: 0 2px 8px rgba(232,230,223,0.2);
 }
 
-/* ===================== ПОПАП ===================== */
+/* ===================== ПОПАП КАРТОЧКИ ===================== */
 #popup-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0);
-  
-  /* ИСПРАВЛЕНО: Поместили слой строго под попап, но ПОВЕРХ летящих картинок */
   z-index: 100001; 
   transition: background 0.45s ease;
   cursor: default;
-  
-  /* ОПТИМИЗАЦИЯ GPU: плавное затухание без мерцания */
   will-change: background-color;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -226,8 +213,6 @@ html, body {
   background: transparent;
   overflow: visible;
   transform-origin: top left;
-  
-  /* ОПТИМИЗАЦИЯ GPU */
   will-change: transform, opacity;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -240,8 +225,6 @@ html, body {
   -webkit-transform-style: preserve-3d;
   transition: transform 0.65s cubic-bezier(.25,1,.3,1);
   position: relative;
-  
-  /* ОПТИМИЗАЦИЯ GPU */
   will-change: transform;
 }
 
@@ -251,12 +234,10 @@ html, body {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   outline: 1px solid transparent; 
-  
-  /* ФОРСИРУЕМ РЕЗКОСТЬ ДЛЯ 3D */
   -webkit-font-smoothing: subpixel-antialiased;
   -moz-osx-font-smoothing: grayscale;
   image-rendering: -webkit-optimize-contrast;
-  transform: translateZ(1px); /* Прорисовываем в честном высоком разрешении */
+  transform: translateZ(1px);
 }
 
 .popup-front {
@@ -273,7 +254,7 @@ html, body {
   height: 100%;
   object-fit: cover;
   display: block;
-  image-rendering: -webkit-optimize-contrast; /* Убирает мыло с картинок при масштабе */
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .popup-back {
@@ -288,7 +269,6 @@ html, body {
   outline: 1px solid transparent;
 }
 
-/* Галерея */
 .popup-gallery {
   display: flex;
   flex-wrap: wrap;
@@ -298,7 +278,6 @@ html, body {
   flex-shrink: 0;
 }
 
-/* Контакты */
 .popup-contact {
   position: absolute;
   left: 100%;
@@ -317,11 +296,8 @@ html, body {
   opacity: 0;
   transition: opacity 0.2s ease;
   will-change: opacity;
-  
-  /* ИСПРАВЛЕНИЕ РАЗМЫТИЯ ТЕКСТА */
   -webkit-font-smoothing: subpixel-antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Слегка выдвигаем текст вперед, отделяя от подложки, чтобы убрать микро-размытие */
   transform: translate3d(0, 0, 2px); 
 }
 .popup-contact.active {
@@ -347,8 +323,6 @@ html, body {
   transition: background 0.2s, transform 0.2s;
   line-height: 1;
   font-family: Arial, sans-serif;
-  
-  /* Крестик тоже приподнимем в 3D, чтобы он не мылился */
   -webkit-font-smoothing: subpixel-antialiased;
   transform: translate3d(0, 0, 3px); 
 }
@@ -357,7 +331,7 @@ html, body {
   transform: translate3d(0, 0, 3px) scale(1.1);
 }
 
-/* ===================== ПОЛНОЭКРАННЫЙ ПРОСМОТР ===================== */
+/* ===================== КАРТИНКА УВЕЛИЧЕННОГО ПРОСМОТРА (FSV) ===================== */
 #fsv-overlay {
   position: fixed;
   inset: 0;
@@ -428,57 +402,281 @@ html, body {
   z-index: 200001;
 }
 
-/* ===================== АДАПТИВ ДЛЯ МОБИЛЬНЫХ (≤ 768px) ===================== */
+/* ===================== ОКНО ПРИВЕТСТВИЯ (ИСПРАВЛЕНО И ОТЦЕНТРИРОВАНО) ===================== */
+#welcome-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 250000 !important; 
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), 
+              background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  overflow: hidden; 
+}
+
+#welcome-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+  background: rgba(5, 5, 6, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+#welcome-modal {
+  background: rgba(16, 16, 18, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 60px 80px;
+  width: 90vw;
+  max-width: 850px;
+  
+  height: auto !important; 
+  max-height: 90vh;
+  box-sizing: border-box;
+  
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important; 
+  align-items: center !important;     
+  
+  position: relative;
+  box-shadow: 0 60px 120px rgba(0, 0, 0, 0.9), 
+              inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transform: scale(0.96) translateY(30px);
+  filter: blur(8px);
+  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), 
+              filter 0.8s ease;
+  overflow: hidden; 
+}
+
+#welcome-overlay.active #welcome-modal {
+  transform: scale(1) translateY(0);
+  filter: blur(0px);
+}
+
+.welcome-close-btn {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+  z-index: 10;
+}
+.welcome-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.welcome-content {
+  width: 100%;
+  max-width: 960px;
+  text-align: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin: auto 0 !important;  
+}
+
+/* --------------------------------------------------------------------
+   [ОТДЕЛЬНЫЙ CSS ДЛЯ ЛОГОТИПА НА КОМПЬЮТЕРАХ]
+-------------------------------------------------------------------- */
+.welcome-logo {
+  display: block;
+  margin: 0 auto 24px auto; 
+  width: 100%;
+  max-width: 280px; 
+  height: auto;
+  object-fit: contain;
+  opacity: 0.95;
+  transition: max-width 0.4s ease, margin-bottom 0.4s ease;
+}
+
+.welcome-title {
+  font-size: 3rem; 
+  font-weight: 400;
+  color: #fff;
+  margin: 0 0 30px 0; 
+  letter-spacing: -1px;
+  line-height: 1.15;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease 0.15s, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.welcome-text {
+  font-size: 1.35rem; 
+  color: #b5b5b7;
+  line-height: 1.6;
+  margin: 0 0 16px 0; 
+  font-weight: 300;
+  letter-spacing: -0.1px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.welcome-text:last-of-type {
+  margin-bottom: 0;
+}
+
+.welcome-text.highlight {
+  color: #e8e6df;
+  font-weight: 400;
+  margin-top: 24px;
+  margin-bottom: 0;
+  font-size: 1.4rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 20px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===================== КАСКАДНОЕ ПОЯВЛЕНИЕ СТРОК (STAGGER) ===================== */
+#welcome-overlay.active .welcome-title { 
+  opacity: 1; 
+  transform: translateY(0); 
+}
+#welcome-overlay.active .welcome-text:nth-child(2) { 
+  opacity: 1; transform: translateY(0); transition-delay: 0.3s; 
+}
+#welcome-overlay.active .welcome-text:nth-child(3) { 
+  opacity: 1; transform: translateY(0); transition-delay: 0.45s; 
+}
+#welcome-overlay.active .welcome-text:nth-child(4) { 
+  opacity: 1; transform: translateY(0); transition-delay: 0.6s; 
+}
+#welcome-overlay.active .welcome-text:nth-child(5) { 
+  opacity: 1; transform: translateY(0); transition-delay: 0.75s; 
+}
+
+/* Явное принудительное проявление для последней строки .highlight с финальной задержкой */
+#welcome-overlay.active .welcome-text.highlight { 
+  opacity: 1 !important; 
+  transform: translateY(0) !important; 
+  transition-delay: 0.85s !important; 
+}
+
+/* ===================== АДАПТИВНОСТЬ ДЛЯ ПЛАНШЕТОВ И МОБИЛЬНЫХ ===================== */
+@media (max-width: 1024px) {
+  .welcome-logo {
+    max-width: 220px;
+    margin-bottom: 20px;
+  }
+  .welcome-title { font-size: 2.3rem; margin-bottom: 24px; }
+  .welcome-text { font-size: 1.25rem; margin-bottom: 14px; }
+  .welcome-text.highlight { font-size: 1.3rem; margin-top: 20px; padding-top: 18px; }
+}
+
 @media (max-width: 768px) {
-  /* Перестраиваем попап вертикально: фото сверху, текст снизу */
   .popup-back {
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
   }
-
-  /* Разворачиваем галерею/фото на всю ширину */
   .popup-gallery {
     width: 100% !important;
     height: 100% !important;
   }
-
-  /* Позиционируем текстовый блок строго ПОД фотографией */
   .popup-contact {
     position: absolute !important;
     left: 0 !important;
-    top: 100% !important; /* Встает ровно под нижний край фото */
+    top: 100% !important; 
     width: 100% !important;
-    height: auto !important; /* Высота подстраивается под контент */
-    padding: 24px 20px !important; /* Удобные отступы для пальцев */
+    height: auto !important; 
+    padding: 24px 20px !important; 
     border-left: none !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08); /* Разделитель сверху */
+    border-top: 1px solid rgba(255, 255, 255, 0.08); 
     background: #0e0e10;
     box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
   }
+  .popup-contact .pc-name { font-size: 20px !important; margin-bottom: 6px !important; }
+  .popup-contact .pc-title { font-size: 15px !important; margin-bottom: 10px !important; }
+  .popup-contact .pc-value { font-size: 14px !important; }
 
-  /* Шрифты делаем крупнее и читабельнее на мобильных */
-  .popup-contact .pc-name {
-    font-size: 20px !important;
-    margin-bottom: 6px !important;
-  }
-  .popup-contact .pc-title {
-    font-size: 15px !important;
-    margin-bottom: 10px !important;
-  }
-  .popup-contact .pc-value {
-    font-size: 14px !important;
-  }
-
-  /* Переносим кнопку закрытия в правый верхний угол самой фотографии */
   #popup-close-btn {
     right: 16px !important;
     top: 16px !important;
-    width: 36px !important; /* Чуть увеличим, чтобы на мобилке было легче попасть */
+    width: 36px !important; 
     height: 36px !important;
-    background: rgba(0, 0, 0, 0.5) !important; /* Темный кружок, чтобы не терялся на фото */
+    background: rgba(0, 0, 0, 0.5) !important; 
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    backdrop-filter: blur(8px); /* Красивое размытие за крестиком */
+    backdrop-filter: blur(8px); 
     -webkit-backdrop-filter: blur(8px);
+  }
+
+  /* Адаптив приветственного окна для смартфонов */
+  #welcome-modal {
+    width: 92vw !important;
+    height: auto !important; 
+    max-height: 85vh !important;
+    padding: 40px 24px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important; 
+  }
+  
+  .welcome-content {
+    margin: auto 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  
+  .welcome-logo {
+    max-width: 150px;
+    margin-bottom: 16px;
+  }
+
+  .welcome-title { 
+    font-size: 1.7rem; 
+    margin-bottom: 16px; 
+    text-align: center !important; 
+  }
+  
+  .welcome-text { 
+    font-size: 1.05rem; 
+    margin-bottom: 12px; 
+    text-align: center !important; 
+    line-height: 1.45; 
+  }
+  
+  .welcome-text.highlight { 
+    font-size: 1.1rem; 
+    margin-top: 16px; 
+    padding-top: 14px; 
+    text-align: center !important; 
+  }
+  
+  .welcome-close-btn {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
   }
 }
