@@ -15,6 +15,11 @@ const CONTACT_INFO = {
   collection: 'in private collectoin - Japan'       // 3 строчка
 };
 
+/* Ширина панели контактов в попапе (px).
+   Меняйте ТОЛЬКО это число — весь блок (фото + панель) будет
+   центрироваться правильно, и кнопка закрытия сама встанет на место. */
+const CONTACT_WIDTH = 500;
+
 const scene = document.getElementById('scene');
 let W = window.innerWidth;
 let H = window.innerHeight;
@@ -479,7 +484,10 @@ function openPopup(photo) {
 
   let galleryW, galleryH, finalL, finalT;
   const imgRatio = 1 / CONFIG.ratio;
-  const textWidth = isMobile ? 0 : 300; // На мобилке текст снизу, ширину сцены не увеличивает
+  // На мобилке текст снизу, ширину сцены не увеличивает.
+  // На десктопе берём ширину из единой константы CONTACT_WIDTH,
+  // чтобы центрирование всегда совпадало с реальной шириной панели.
+  const textWidth = isMobile ? 0 : CONTACT_WIDTH;
 
   if (isMobile) {
     // 1. Мобильная логика: попап занимает 85% ширины экрана (комфортные 80-85%)
@@ -566,6 +574,10 @@ function openPopup(photo) {
   // Панель контактов
   const contact = document.createElement('div');
   contact.className = 'popup-contact';
+  // Ширина берётся из единой константы CONTACT_WIDTH (см. верх файла),
+  // это перебивает значение width:300px из CSS и синхронизирует
+  // реальную ширину панели с расчётом центрирования выше.
+  contact.style.width = CONTACT_WIDTH + 'px';
   contact.innerHTML = `
     <div class="pc-name" style="margin-bottom: 8px; font-size: 28px; font-weight: 600; line-height:1.2;">${CONTACT_INFO.title}</div>
     <div class="pc-title" style="margin-bottom: 12px; font-size: 18px; color: #555;">${CONTACT_INFO.meta}</div>
@@ -577,6 +589,10 @@ function openPopup(photo) {
   const closeBtn = document.createElement('button');
   closeBtn.id = 'popup-close-btn';
   closeBtn.innerHTML = '✕';
+  // Позиция кнопки тоже привязана к CONTACT_WIDTH, чтобы при любой
+  // ширине панели контактов крестик оставался у её правого края
+  // (16px — это top/right отступ кнопки, заданный в CSS).
+  closeBtn.style.right = -(CONTACT_WIDTH - 16) + 'px';
   back.appendChild(closeBtn);
 
   card.appendChild(front);
